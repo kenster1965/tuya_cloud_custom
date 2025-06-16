@@ -41,24 +41,19 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tuya Cloud Custom from a Config Entry."""
 
-    # 1️⃣ Check secrets.yaml exists and valid
+    # 1️⃣ Check secrets.yaml
     if not _check_secrets(hass):
         return False
 
-    # 2️⃣ Load devices YAML
+    # 2️⃣ Load devices
     devices = load_tuya_devices(DEVICES_FILE)
     hass.data[DOMAIN] = {"devices": devices}
 
-    # 3️⃣ Refresh Tuya token once at startup
+    # 3️⃣ Refresh token
     hass.async_add_executor_job(refresh_token)
 
-    # 4️⃣ Forward entry to each platform — must await!
-    await asyncio.gather(
-        *[
-            hass.config_entries.async_forward_entry_setup(entry, platform)
-            for platform in PLATFORMS
-        ]
-    )
+    # ✅ 4️⃣ Correct modern method:
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
