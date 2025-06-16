@@ -5,5 +5,6 @@
     "documentation": "https://github.com/kenster1965/tuya_cloud_custom",
     "dependencies": [],
     "codeowners": ["@kenster1965"],
+    "config_flow": true,
     "requirements": []
   }
