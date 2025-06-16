@@ -9,3 +9,21 @@ dps[].id	    Data Point (DP) ID for Tuya commands
 dps[].code	    P code name (human-readable)
 dps[].platform	HA platform type: sensor, switch, etc.
 enabled	Whether to include the device/dp
+
+
+tuya_cloud_custom/
+├── config/              <-- configs & secrets
+├── helpers/             <-- helper scripts
+├── platform files       <-- number.py, sensor.py, switch.py
+├── __init__.py
+├── manifest.json
+├── tuya_status.py       <-- maybe your polling logic
+└── Info.md
+
+__init__.py	                        Loads the YAML once & stores the list in hass.data
+switch.py, sensor.py, number.py	    Use that list to instantiate real HA Entity subclasses
+
+__init__.py → load YAML → store in hass.data
+platform.py (e.g., switch.py) → read hass.data → create Entities
+
+Later I want register this as a HA serviceto tuya_cloud_custom.refresh_token for easy automation.

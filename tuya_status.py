@@ -1,4 +1,3 @@
-import appdaemon.plugins.hass.hassapi as hass
 import requests
 import time
 from datetime import timedelta
@@ -7,6 +6,8 @@ import json
 import hmac
 import hashlib
 import yaml
+from . import DEVICES_FILE, TOKEN_FILE
+
 
 class TuyaStatus(hass.Hass):
     def initialize(self):
@@ -15,10 +16,8 @@ class TuyaStatus(hass.Hass):
         self.client_id = self.args["client_id"]
         self.client_secret = self.args["client_secret"]
 
-        device_path = self.args.get("device_path", "/share/tuya_devices.yaml")
-
         try:
-            with open(device_path, "r") as f:
+            with open(DEVICES_FILE, "r") as f:
                 self.devices = yaml.safe_load(f).get("devices", [])
         except Exception as e:
             self.log(f"❌ Failed to load devices config: {e}", level="ERROR")
@@ -39,7 +38,7 @@ class TuyaStatus(hass.Hass):
     def fetch_status(self, kwargs):
         device = kwargs["device"]
         try:
-            with open("/share/tuya_token.json", "r") as f:
+            with open(TOKEN_FILE, "r") as f:
                 token_data = json.load(f)
 
             access_token = token_data["access_token"]

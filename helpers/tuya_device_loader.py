@@ -1,8 +1,10 @@
 import yaml
-import os
 
-def load_tuya_devices(config_dir):
-    yaml_path = os.path.join(config_dir, "tuya_devices.yaml")
-    with open(yaml_path, "r") as f:
+def load_tuya_devices(devices_file):
+    """
+    Generic loader: takes a file path as argument.
+    The caller (e.g., __init__.py) decides which file to pass.
+    """
+    with open(devices_file, "r") as f:
         data = yaml.safe_load(f)
     return [d for d in data.get("devices", []) if d.get("enabled", True)]
