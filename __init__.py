@@ -47,12 +47,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tuya Cloud Custom from a Config Entry."""
 
     # ✅ 1️⃣ Load and validate secrets
-    secrets = _check_secrets(hass)
+    secrets = await hass.async_add_executor_job(_check_secrets, SECRETS_FILE)
     if secrets is None:
         return False
 
     # ✅ 2️⃣ Load devices YAML
-    devices = load_tuya_devices(DEVICES_FILE)
+    devices = await hass.async_add_executor_job(load_tuya_devices, DEVICES_FILE)
 
     # ✅ 3️⃣ Store everything in hass.data for runtime sharing
     hass.data[DOMAIN] = {
@@ -100,27 +100,23 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 # ------------------------------------------------------------------------------
 # ✅ Helper: check secrets.yaml exists and has required fields
 # ------------------------------------------------------------------------------
-def _check_secrets(hass: HomeAssistant) -> dict | None:
-    """Verify secrets.yaml has required fields, return dict if valid."""
-    if not os.path.isfile(SECRETS_FILE):
-        hass.components.logger.error(
-            f"[{DOMAIN}] ❌ Missing required file: {SECRETS_FILE}"
-        )
+def _check_secrets(filepath) -> dict | None:
+    """Verify secrets.yaml has required fields."""
+    if not os.path.isfile(filepath):
+        _LOGGER.error(f"[{DOMAIN}] ❌ Missing required file: {filepath}")
         return None
 
     try:
-        with open(SECRETS_FILE, "r") as f:
+        with open(filepath, "r") as f:
             secrets = yaml.safe_load(f) or {}
 
         client_id = secrets.get("client_id")
         client_secret = secrets.get("client_secret")
         base_url = secrets.get("base_url")
-        token_refresh = secrets.get("token_refresh", 110)  # default to 110 min
+        token_refresh = secrets.get("token_refresh", 110)
 
         if not client_id or not client_secret or not base_url:
-            hass.components.logger.error(
-                f"[{DOMAIN}] ❌ Required fields missing: client_id, client_secret, or base_url in {SECRETS_FILE}"
-            )
+            _LOGGER.error(f"[{DOMAIN}] ❌ Required fields missing in {filepath}")
             return None
 
         return {
@@ -131,7 +127,5 @@ def _check_secrets(hass: HomeAssistant) -> dict | None:
         }
 
     except Exception as e:
-        hass.components.logger.error(
-            f"[{DOMAIN}] 💥 Error reading {SECRETS_FILE}: {e}"
-        )
+        _LOGGER.error(f"[{DOMAIN}] 💥 Error reading {filepath}: {e}")
         return None
