@@ -27,3 +27,5 @@ __init__.py → load YAML → store in hass.data
 platform.py (e.g., switch.py) → read hass.data → create Entities
 
 Later I want register this as a HA serviceto tuya_cloud_custom.refresh_token for easy automation.
+
+entity_category should either be: a valid string like "diagnostic" or "config",

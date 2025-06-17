@@ -5,7 +5,7 @@ import asyncio
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers.discovery import async_load_platform
+from homeassistant.helpers.event import async_call_later
 
 from .helpers.tuya_device_loader import load_tuya_devices
 from .helpers.tuya_token_refresh import refresh_token
@@ -41,18 +41,34 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tuya Cloud Custom from a Config Entry."""
 
-    # 1️⃣ Check secrets.yaml
-    if not _check_secrets(hass):
+    # 1️⃣ Load and validate secrets.yaml
+    secrets = _check_secrets(hass)
+    if secrets is None:
         return False
 
-    # 2️⃣ Load devices
+    # 2️⃣ Load devices YAML
     devices = load_tuya_devices(DEVICES_FILE)
-    hass.data[DOMAIN] = {"devices": devices}
 
-    # 3️⃣ Refresh token
+    # 3️⃣ Store both in hass.data
+    hass.data[DOMAIN] = {
+        "devices": devices,
+        "secrets": secrets,
+    }
+
+    # 4️⃣ Refresh token immediately
     hass.async_add_executor_job(refresh_token)
 
-    # ✅ 4️⃣ Correct modern method:
+    # 5️⃣ Schedule periodic token refresh
+    interval = int(secrets.get("token_refresh", 110)) * 60  # minutes to seconds
+
+    async def _refresh_loop(_):
+        await hass.async_add_executor_job(refresh_token)
+        async_call_later(hass, interval, _refresh_loop)
+
+    # Start the refresh loop after interval
+    async_call_later(hass, interval, _refresh_loop)
+
+    # 6️⃣ Forward platforms using modern API
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
@@ -69,32 +85,41 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 # ------------------------------------------------------------------------------
-# ✅ Helper: check secrets.yaml exists and has required keys
+# ✅ Helper: check secrets.yaml exists and has required fields
 # ------------------------------------------------------------------------------
 
-def _check_secrets(hass: HomeAssistant) -> bool:
-    """Verify secrets.yaml has required fields."""
+def _check_secrets(hass: HomeAssistant) -> dict | None:
+    """Verify secrets.yaml has required fields, return dict if valid."""
     if not os.path.isfile(SECRETS_FILE):
         hass.components.logger.error(
             f"[{DOMAIN}] ❌ Missing required file: {SECRETS_FILE}"
         )
-        return False
+        return None
 
     try:
         with open(SECRETS_FILE, "r") as f:
             secrets = yaml.safe_load(f) or {}
+
         client_id = secrets.get("client_id")
         client_secret = secrets.get("client_secret")
         base_url = secrets.get("base_url")
+        token_refresh = secrets.get("token_refresh", 110)  # default to 110 min
+
         if not client_id or not client_secret or not base_url:
             hass.components.logger.error(
                 f"[{DOMAIN}] ❌ Required fields missing: client_id, client_secret, or base_url in {SECRETS_FILE}"
             )
-            return False
+            return None
+
+        return {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "base_url": base_url,
+            "token_refresh": token_refresh,
+        }
+
     except Exception as e:
         hass.components.logger.error(
             f"[{DOMAIN}] 💥 Error reading {SECRETS_FILE}: {e}"
         )
-        return False
-
-    return True
+        return None
