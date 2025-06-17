@@ -7,11 +7,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.event import async_call_later
-from .tuya_status import TuyaStatus
 
 from .const import DOMAIN
-from .helpers.helper import load_tuya_devices, _check_secrets, refresh_token
-from .tuya_status import TuyaStatus
+from .helpers.device_loader import load_tuya_devices
+from .helpers.token_refresh import refresh_token
+from .status import Status
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,8 +80,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # ✅ 7️⃣ Start TuyaStatus polling
-    tuya_status = TuyaStatus(hass)
-    await tuya_status.async_start_polling()
+    status = Status(hass)
+    await status.async_start_polling()
 
     _LOGGER.info("[%s] ✅ Setup complete", DOMAIN)
     return True

@@ -17,7 +17,7 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 
-class TuyaStatus:
+class Status:
     """Handles polling Tuya Cloud device status."""
 
     def __init__(self, hass):
