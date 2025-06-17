@@ -1,42 +1,39 @@
 import re
+from ..const import DOMAIN
+from homeassistant.helpers.entity import EntityCategory
 
-# Only HA-supported categories
-VALID_ENTITY_CATEGORIES = {"diagnostic", "config"}
+# Allowed HA entity categories
+VALID_ENTITY_CATEGORIES = {
+    "diagnostic": EntityCategory.DIAGNOSTIC,
+    "config": EntityCategory.CONFIG,
+}
 
-def sanitize(value: str, logger=None) -> str:
-    """
-    Sanitize a string for HA entity_id usage:
-    - lowercases
-    - replaces spaces with underscores
-    - replaces invalid chars with underscores
-    - logs if any change is made
-    """
+def sanitize(value: str, logger=None):
+    """Slugify a string for HA entity_id safety."""
     original = value
     cleaned = value.lower().replace(" ", "_")
     cleaned = re.sub(r"[^a-z0-9_]+", "_", cleaned)
-
-    if original != cleaned and logger:
-        logger.warning(
-            f"[tuya_cloud_custom] Sanitized value: '{original}' → '{cleaned}'"
-        )
-
+    if logger and original != cleaned:
+        logger.warning(f"[{DOMAIN}] Sanitized: '{original}' → '{cleaned}'")
     return cleaned
 
 
 def build_entity_attrs(device, dp, platform: str, logger=None):
     """
-    Build clean entity attributes for Tuya Cloud Custom:
-    - Good unique_id & entity_id
-    - Friendly name for UI
-    - Only valid entity_category
-    - Optional log warnings for sanitizing & invalid categories
+    Build attributes for an HA entity:
+    - ID uses ha_name + code only (never friendly name)
+    - UI name uses ha_name + code by default
+    - Skips bad entity_category with a log
     """
-    ha_base = sanitize(device["ha_name"], logger)
-    dp_code = sanitize(dp["code"], logger)
-    unique_id = f"{ha_base}_{dp_code}"
+
+    ha_name = sanitize(device["ha_name"], logger)
+    dp_code = sanitize(dp.get("code") or "unknown", logger)
+
+    unique_id = f"{ha_name}_{dp_code}"
     entity_id = f"{platform}.{unique_id}"
 
-    friendly_name = f"{device.get('friendly_name', ha_base)} - {dp.get('friendly_name', dp['code'])}"
+    # Simple default UI name
+    friendly_name = f"{ha_name} {dp_code}"
 
     attrs = {
         "entity_id": entity_id,
@@ -49,11 +46,11 @@ def build_entity_attrs(device, dp, platform: str, logger=None):
 
     ec = dp.get("entity_category")
     if ec in VALID_ENTITY_CATEGORIES:
-        attrs["entity_category"] = ec
+        attrs["entity_category"] = VALID_ENTITY_CATEGORIES[ec]
     elif ec and logger:
         logger.warning(
-            f"[tuya_cloud_custom] Ignored invalid entity_category '{ec}' "
-            f"for DP '{dp_code}'. Must be one of: {VALID_ENTITY_CATEGORIES}."
+            f"[{DOMAIN}] Ignored invalid entity_category '{ec}' for DP '{dp_code}'. "
+            f"Must be one of: {list(VALID_ENTITY_CATEGORIES.keys())}."
         )
 
     if "unit" in dp:
@@ -65,3 +62,14 @@ def build_entity_attrs(device, dp, platform: str, logger=None):
         attrs["step"] = dp.get("step_size")
 
     return attrs
+
+
+def build_device_info(device):
+    """Return HA Device Registry info so multiple entities group together."""
+    return {
+        "identifiers": {(DOMAIN, device["tuya_device_id"])},
+        "name": device["ha_name"],
+        "manufacturer": "Tuya",
+        "model": device.get("category", "Unknown"),
+        "sw_version": str(device.get("version", "unknown")),
+    }

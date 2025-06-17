@@ -29,3 +29,9 @@ platform.py (e.g., switch.py) → read hass.data → create Entities
 Later I want register this as a HA serviceto tuya_cloud_custom.refresh_token for easy automation.
 
 entity_category should either be: a valid string like "diagnostic" or "config",
+
+Field	                Meaning
+ha_name	                Local ID for your integration.
+tuya_device_id	        The real Tuya Cloud hardware ID (globally unique).
+category	            Tuya’s standard type code for that device class.
+local_ip + local_key	Used for LAN/local protocol, not relevant for Device Registry.

@@ -1,8 +1,13 @@
-from .helpers.helper import build_entity_attrs
-from homeassistant.components.sensor import SensorEntity
+import logging
+from .helpers.helper import build_entity_attrs, build_device_info
 from .const import DOMAIN
+from homeassistant.components.sensor import SensorEntity
+
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up Tuya Cloud Custom sensors."""
     devices = hass.data[DOMAIN]["devices"]
     sensors = []
     for device in devices:
@@ -15,11 +20,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class TuyaCloudSensor(SensorEntity):
     """Tuya Cloud Custom Sensor."""
 
-    def __init__(self, device, dp):
-        attrs = build_entity_attrs(device, dp, "sensor", logger=hass.components.logger)
+    def __init__(self, device, dp, hass):
+        logger = logging.getLogger(__name__)
+        attrs = build_entity_attrs(device, dp, "sensor", logger=logger)
 
         self._device = device
         self._dp = dp
+        self._hass = hass
+
         self._attr_name = attrs["name"]
         self._attr_unique_id = attrs["unique_id"]
 
@@ -34,10 +42,23 @@ class TuyaCloudSensor(SensorEntity):
 
         self._state = None
 
+        # Link to TuyaStatus key
+        self._tuya_device_id = device["tuya_device_id"]
+        self._tuya_code = dp["code"]
+
+        key = (self._tuya_device_id, self._tuya_code)
+        logger.debug(f"[{DOMAIN}] Registering sensor entity: {key}")
+        self._hass.data[DOMAIN]["entities"][key] = self
+
     @property
     def native_value(self):
         return self._state
 
+    @property
+    def device_info(self):
+        """Link this entity to a Device in HA."""
+        return build_device_info(self._device)
+
     async def async_update(self):
-        # 🔧 TODO: Add real polling logic
+        # No direct poll — handled by TuyaStatus loop.
         pass
