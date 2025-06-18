@@ -1,7 +1,7 @@
 """
 Tuya Cloud Custom: __init__.py
 -------------------------------
-Entry point for your custom integration.
+Main integration bootstrap.
 Loads secrets, sets up token refresh loop, starts status polling,
 and wires up switch, sensor, number platforms.
 """
@@ -9,6 +9,7 @@ and wires up switch, sensor, number platforms.
 import os
 import yaml
 import logging
+
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
@@ -22,7 +23,7 @@ from .status import Status
 _LOGGER = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------------------
-# Paths
+# 📁 Paths
 # ------------------------------------------------------------------------------
 COMPONENT_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(COMPONENT_PATH, "config")
@@ -30,49 +31,49 @@ DEVICES_FILE = os.path.join(CONFIG_PATH, "tuya_devices.yaml")
 TOKEN_FILE = os.path.join(CONFIG_PATH, "tuya_token.json")
 SECRETS_FILE = os.path.join(CONFIG_PATH, "secrets.yaml")
 
-# Platforms
+# ------------------------------------------------------------------------------
+# Platforms to load
+# ------------------------------------------------------------------------------
 PLATFORMS = ["switch", "sensor", "number"]
 
-
 # ------------------------------------------------------------------------------
-# YAML fallback setup (rare)
+# YAML fallback setup (unused for config_flow)
 # ------------------------------------------------------------------------------
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Legacy YAML fallback — unused in config_flow mode."""
+    """Optional legacy YAML fallback."""
     return True
-
 
 # ------------------------------------------------------------------------------
 # ✅ Setup from Config Entry
 # ------------------------------------------------------------------------------
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Tuya Cloud Custom from Config Entry."""
+    """Set up Tuya Cloud Custom from a Config Entry."""
 
-    # ✅ 1️⃣ Load secrets YAML
-    secrets = _check_secrets(hass)
+    # ✅ 1️⃣ Load secrets async-safe
+    secrets = await _check_secrets(hass)
     if secrets is None:
         return False
 
-    # ✅ 2️⃣ Load devices YAML
+    # ✅ 2️⃣ Load devices async-safe
     devices = await hass.async_add_executor_job(load_tuya_devices, DEVICES_FILE)
 
-    # ✅ 3️⃣ Store all in hass.data FIRST!
+    # ✅ 3️⃣ Store in hass.data FIRST
     hass.data[DOMAIN] = {
         "devices": devices,
         "secrets": secrets,
-        "entities": {},  # all switch/sensor/number track themselves here
+        "entities": {},  # shared registry for all platforms
         "token_file": TOKEN_FILE,
         "devices_file": DEVICES_FILE,
         "secrets_file": SECRETS_FILE,
     }
 
-    # ✅ 4️⃣ Refresh token immediately
+    # ✅ 4️⃣ Refresh token immediately (blocking IO → executor)
     await hass.async_add_executor_job(
         refresh_token, SECRETS_FILE, TOKEN_FILE
     )
 
     # ✅ 5️⃣ Schedule periodic token refresh
-    interval = int(secrets.get("token_refresh", 110)) * 60  # min -> sec
+    interval = int(secrets.get("token_refresh", 110)) * 60  # min → sec
 
     async def _refresh_loop(_):
         _LOGGER.info(f"[{DOMAIN}] 🔄 Scheduled token refresh running...")
@@ -81,33 +82,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async_call_later(hass, interval, _refresh_loop)
 
-    # ✅ 6️⃣ Forward all platforms
+    # ✅ 6️⃣ Forward platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # ✅ 7️⃣ Start status polling — always AFTER hass.data is populated!
+    # ✅ 7️⃣ Start Status polling AFTER everything is ready
     status = Status(hass)
     await status.async_start_polling()
 
     _LOGGER.info(f"[{DOMAIN}] ✅ Setup complete.")
     return True
 
-
 # ------------------------------------------------------------------------------
-# ✅ Unload Config Entry cleanly
+# ✅ Clean unload
 # ------------------------------------------------------------------------------
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload this Config Entry properly."""
+    """Unload a Config Entry cleanly."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data.pop(DOMAIN, None)
     return unload_ok
 
-
 # ------------------------------------------------------------------------------
-# ✅ Helper: Validate secrets.yaml exists and has keys
+# ✅ Async-safe secrets loader
 # ------------------------------------------------------------------------------
-def _check_secrets(hass: HomeAssistant) -> dict | None:
-    """Load secrets.yaml and verify required fields exist."""
+async def _check_secrets(hass: HomeAssistant) -> dict | None:
+    """Load secrets.yaml in executor, verify required keys."""
 
     if not os.path.isfile(SECRETS_FILE):
         hass.components.logger.error(
@@ -116,8 +115,7 @@ def _check_secrets(hass: HomeAssistant) -> dict | None:
         return None
 
     try:
-        with open(SECRETS_FILE, "r") as f:
-            secrets = yaml.safe_load(f) or {}
+        secrets = await hass.async_add_executor_job(_read_secrets)
 
         client_id = secrets.get("client_id")
         client_secret = secrets.get("client_secret")
@@ -126,7 +124,7 @@ def _check_secrets(hass: HomeAssistant) -> dict | None:
 
         if not client_id or not client_secret or not base_url:
             hass.components.logger.error(
-                f"[{DOMAIN}] ❌ Missing client_id, client_secret or base_url in {SECRETS_FILE}"
+                f"[{DOMAIN}] ❌ Missing required keys in {SECRETS_FILE}"
             )
             return None
 
@@ -142,3 +140,8 @@ def _check_secrets(hass: HomeAssistant) -> dict | None:
             f"[{DOMAIN}] 💥 Error reading {SECRETS_FILE}: {e}"
         )
         return None
+
+def _read_secrets():
+    """Blocking helper: read YAML from disk."""
+    with open(SECRETS_FILE, "r") as f:
+        return yaml.safe_load(f) or {}
