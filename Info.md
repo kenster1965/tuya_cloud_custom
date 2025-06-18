@@ -35,3 +35,21 @@ ha_name	                Local ID for your integration.
 tuya_device_id	        The real Tuya Cloud hardware ID (globally unique).
 category	            Tuya’s standard type code for that device class.
 local_ip + local_key	Used for LAN/local protocol, not relevant for Device Registry.
+
+custom_components/tuya_cloud_custom/
+├── __init__.py               ✅ main integration bootstrap
+├── manifest.json             ✅ your existing valid manifest
+├── const.py                  ✅ contains: DOMAIN = "tuya_cloud_custom"
+├── config_flow.py            ✅ minimal config flow if you use it
+├── status.py                 ✅ handles periodic polling
+├── switch.py                 ✅ your switch platform
+├── sensor.py                 ✅ your sensor platform
+├── number.py                 ✅ your number platform
+├── helpers/
+│   ├── helper.py             ✅ shared build helpers
+│   ├── token_refresh.py      ✅ final consistent token refresher
+│   ├── device_loader.py      ✅ final consistent YAML loader
+├── config/
+│   ├── secrets.yaml          ✅ your secret keys
+│   ├── tuya_devices.yaml     ✅ your device list
+│   ├── tuya_token.json       ✅ always updated here

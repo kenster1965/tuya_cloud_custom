@@ -1,8 +1,14 @@
+"""
+Tuya Cloud Custom: __init__.py
+-------------------------------
+Entry point for your custom integration.
+Loads secrets, sets up token refresh loop, starts status polling,
+and wires up switch, sensor, number platforms.
+"""
+
 import os
 import yaml
 import logging
-import asyncio
-
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
@@ -16,7 +22,7 @@ from .status import Status
 _LOGGER = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------------------
-# 📁 Paths
+# Paths
 # ------------------------------------------------------------------------------
 COMPONENT_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(COMPONENT_PATH, "config")
@@ -24,66 +30,65 @@ DEVICES_FILE = os.path.join(CONFIG_PATH, "tuya_devices.yaml")
 TOKEN_FILE = os.path.join(CONFIG_PATH, "tuya_token.json")
 SECRETS_FILE = os.path.join(CONFIG_PATH, "secrets.yaml")
 
-# ------------------------------------------------------------------------------
 # Platforms
-# ------------------------------------------------------------------------------
 PLATFORMS = ["switch", "sensor", "number"]
 
-# ------------------------------------------------------------------------------
-# 🏁 SETUP for legacy YAML (optional fallback)
-# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# YAML fallback setup (rare)
+# ------------------------------------------------------------------------------
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up Tuya Cloud Custom using YAML if present.
-
-    This is now a placeholder since config_entry is the preferred way.
-    """
+    """Legacy YAML fallback — unused in config_flow mode."""
     return True
 
+
 # ------------------------------------------------------------------------------
-# ✅ Setup from Config Flow entry
+# ✅ Setup from Config Entry
 # ------------------------------------------------------------------------------
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Tuya Cloud Custom from a Config Entry."""
+    """Set up Tuya Cloud Custom from Config Entry."""
 
-    # ✅ 1️⃣ Load and validate secrets
-    secrets = await hass.async_add_executor_job(_check_secrets, SECRETS_FILE)
+    # ✅ 1️⃣ Load secrets YAML
+    secrets = _check_secrets(hass)
     if secrets is None:
         return False
 
     # ✅ 2️⃣ Load devices YAML
     devices = await hass.async_add_executor_job(load_tuya_devices, DEVICES_FILE)
 
-    # ✅ 3️⃣ Store everything in hass.data for runtime sharing
+    # ✅ 3️⃣ Store all in hass.data FIRST!
     hass.data[DOMAIN] = {
         "devices": devices,
         "secrets": secrets,
-        "entities": {},
+        "entities": {},  # all switch/sensor/number track themselves here
         "token_file": TOKEN_FILE,
         "devices_file": DEVICES_FILE,
         "secrets_file": SECRETS_FILE,
     }
 
-    # ✅ 4️⃣ Refresh token immediately (in executor because it's blocking)
-    hass.async_add_executor_job(refresh_token)
+    # ✅ 4️⃣ Refresh token immediately
+    await hass.async_add_executor_job(
+        refresh_token, SECRETS_FILE, TOKEN_FILE
+    )
 
     # ✅ 5️⃣ Schedule periodic token refresh
-    interval = int(secrets.get("token_refresh", 110)) * 60  # min → sec
+    interval = int(secrets.get("token_refresh", 110)) * 60  # min -> sec
 
     async def _refresh_loop(_):
-        await hass.async_add_executor_job(refresh_token)
+        _LOGGER.info(f"[{DOMAIN}] 🔄 Scheduled token refresh running...")
+        await hass.async_add_executor_job(refresh_token, SECRETS_FILE, TOKEN_FILE)
         async_call_later(hass, interval, _refresh_loop)
 
     async_call_later(hass, interval, _refresh_loop)
 
-    # ✅ 6️⃣ Forward platforms
+    # ✅ 6️⃣ Forward all platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # ✅ 7️⃣ Start TuyaStatus polling
+    # ✅ 7️⃣ Start status polling — always AFTER hass.data is populated!
     status = Status(hass)
     await status.async_start_polling()
 
-    _LOGGER.info("[%s] ✅ Setup complete", DOMAIN)
+    _LOGGER.info(f"[{DOMAIN}] ✅ Setup complete.")
     return True
 
 
@@ -91,23 +96,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 # ✅ Unload Config Entry cleanly
 # ------------------------------------------------------------------------------
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a Config Entry."""
+    """Unload this Config Entry properly."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data.pop(DOMAIN, None)
     return unload_ok
 
+
 # ------------------------------------------------------------------------------
-# ✅ Helper: check secrets.yaml exists and has required fields
+# ✅ Helper: Validate secrets.yaml exists and has keys
 # ------------------------------------------------------------------------------
-def _check_secrets(filepath) -> dict | None:
-    """Verify secrets.yaml has required fields."""
-    if not os.path.isfile(filepath):
-        _LOGGER.error(f"[{DOMAIN}] ❌ Missing required file: {filepath}")
+def _check_secrets(hass: HomeAssistant) -> dict | None:
+    """Load secrets.yaml and verify required fields exist."""
+
+    if not os.path.isfile(SECRETS_FILE):
+        hass.components.logger.error(
+            f"[{DOMAIN}] ❌ Missing file: {SECRETS_FILE}"
+        )
         return None
 
     try:
-        with open(filepath, "r") as f:
+        with open(SECRETS_FILE, "r") as f:
             secrets = yaml.safe_load(f) or {}
 
         client_id = secrets.get("client_id")
@@ -116,7 +125,9 @@ def _check_secrets(filepath) -> dict | None:
         token_refresh = secrets.get("token_refresh", 110)
 
         if not client_id or not client_secret or not base_url:
-            _LOGGER.error(f"[{DOMAIN}] ❌ Required fields missing in {filepath}")
+            hass.components.logger.error(
+                f"[{DOMAIN}] ❌ Missing client_id, client_secret or base_url in {SECRETS_FILE}"
+            )
             return None
 
         return {
@@ -127,5 +138,7 @@ def _check_secrets(filepath) -> dict | None:
         }
 
     except Exception as e:
-        _LOGGER.error(f"[{DOMAIN}] 💥 Error reading {filepath}: {e}")
+        hass.components.logger.error(
+            f"[{DOMAIN}] 💥 Error reading {SECRETS_FILE}: {e}"
+        )
         return None
