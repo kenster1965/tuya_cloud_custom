@@ -27,7 +27,8 @@ _LOGGER = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------
 COMPONENT_PATH = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(COMPONENT_PATH, "config")
-DEVICES_FILE = os.path.join(CONFIG_PATH, "tuya_devices.yaml")
+DEVICES_DIR = os.path.join(CONFIG_PATH, "devices")
+#DEVICES_FILE = os.path.join(CONFIG_PATH, "tuya_devices.yaml")
 TOKEN_FILE = os.path.join(CONFIG_PATH, "tuya_token.json")
 SECRETS_FILE = os.path.join(CONFIG_PATH, "secrets.yaml")
 
@@ -55,7 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
 
     # ✅ 2️⃣ Load devices async-safe
-    devices = await hass.async_add_executor_job(load_tuya_devices, DEVICES_FILE)
+    devices = await hass.async_add_executor_job(load_tuya_devices, DEVICES_DIR)
 
     # ✅ 3️⃣ Store in hass.data FIRST
     hass.data[DOMAIN] = {

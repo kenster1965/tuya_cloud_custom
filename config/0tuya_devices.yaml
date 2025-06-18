@@ -1,0 +1,58 @@
+devices:
+  - ha_name: pool_heat_pump_test
+    tuya_device_id: eb27838708a77766e8gkx9
+    local_ip: 192.168.68.174
+    local_key: JdwX4n6)EYH|<|2I
+    category: znrb
+    poll_interval: 60
+    version: 1
+    enabled: true
+    dps:
+      - code: switch
+        id: '1'
+        restore_on_reconnect: false
+        is_passive_entity: false
+        platform: switch
+        enabled: true
+      - code: temp_current_f
+        id: '35'
+        device_class: temperature
+        platform: sensor
+        enabled: true
+      - code: set_temp59_104
+        id: '196'
+        min_value: 59.0
+        max_value: 104.0
+        step_size: 1.0
+        restore_on_reconnect: false
+        is_passive_entity: false
+        dps_default_value: '80'
+        device_class: temperature
+        platform: number
+        enabled: true
+      - code: fault
+        id: '15'
+        entity_category: diagnostic
+        platform: sensor
+        enabled: true
+  - ha_name: thermostat-upstairs
+    tuya_device_id: ebbc33438cf6370a5fw9mg
+    local_ip: 192.168.68.189
+    local_key: #mFM/Z;L.eI#P()r
+    category: wk
+    poll_interval: 270
+    version: 1
+    enabled: false
+    dps:
+      - code: switch
+        id: '1'
+        entity_category: None
+        restore_on_reconnect: false
+        is_passive_entity: false
+        platform: switch
+        enabled: true
+      - code: battery_percentage
+        id: '35'
+        entity_category: diagnostic
+        platform: sensor
+
