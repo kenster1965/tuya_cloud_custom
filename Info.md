@@ -10,6 +10,29 @@ dps[].code	    DP code name (human-readable)
 dps[].platform	HA platform type: sensor, switch, etc.
 enabled	Whether to include the device/dp
 
+explain that code is what is used, not so much dp id numbers
+
+explaine about integer: true
+
+list a few device classes:
+temperature	    Temperature sensor	    °C / °F
+humidity	    Relative humidity	    %
+battery	        Battery level	        %
+voltage	        Electrical voltage	    V
+current	        Electrical current	    A
+power	        Power usage     	    W
+energy	        Total energy consumed	kWh / Wh
+signal_strength	Signal strength (e.g. WiFi, Zigbee)	dBm
+pressure	    Air pressure	        hPa / mbar
+illuminance	    Light level	    lx
+carbon_monoxide	CO concentration (boolean: detected or not)	—
+carbon_dioxide	CO₂ level	            ppm
+pm25	        Particulate matter (PM2.5)	µg/m³
+pm10	        Particulate matter (PM10)	µg/m³
+aqi	            Air Quality Index	index
+monetary	    Currency value (e.g. cost of energy)	$ / €
+timestamp	    Time value (ISO date/time string)	    —
+
 
 tuya_cloud_custom/
 ├── config/              <-- configs & secrets

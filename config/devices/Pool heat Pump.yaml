@@ -1,40 +1,47 @@
 - device:
-  ha_name: pool_heat_pump_test
-  friendly_name: Pool HeatPump
-  tuya_device_id: eb27838708a77766e8gkx9
-  local_ip: 192.168.68.174
-  local_key: JdwX4n6)EYH|<|2I
-  category: znrb
-  poll_interval: 60
-  version: 1
-  enabled: true
+    ha_name: pool_heat_pump_test
+    friendly_name: Pool HeatPump
+    tuya_device_id: eb27838708a77766e8gkx9
+    local_ip: 192.168.68.174
+    local_key: JdwX4n6)EYH|<|2I
+    category: znrb
+    poll_interval: 60
+    version: 1
+    enabled: true
 
 - switch:
-  friendly_name: Power
-  code: switch
-  id: '1'
-  restore_on_reconnect: false
-  is_passive_entity: false
-  enabled: true
+    friendly_name: Power
+    code: switch
+    id: '1'
+    restore_on_reconnect: false
+    is_passive_entity: false
+    enabled: true
 
 - sensor:
-  code: temp_current_f
-  id: '35'
-  enabled: true
+    friendly_name: Temperature
+    code: temp_current_f
+    id: '35'
+    device_class: temperature
+    unit_of_measurement: '°F'
+    enabled: true
 
 - number:
-  code: set_temp59_104
-  id: '196'
-  min_value: 59.0
-  max_value: 104.0
-  step_size: 1.0
-  restore_on_reconnect: false
-  is_passive_entity: false
-  default_value: '80'
-  enabled: true
+    friendly_name: Set Temp
+    code: set_temp59_104
+    id: '196'
+    min_value: 59.0
+    max_value: 104.0
+    step_size: 1.0
+    restore_on_reconnect: false
+    is_passive_entity: false
+    device_class: temperature
+    unit_of_measurement: '°F'
+    enabled: true
 
 - sensor:
-  code: fault
-  id: '15'
-  entity_category: diagnostic
-  enabled: true
+    friendly_name: Fault
+    code: fault
+    id: '15'
+    entity_category: diagnostic
+    integer: true
+    enabled: true
