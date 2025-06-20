@@ -8,6 +8,7 @@ from .helpers.token_refresh import send_tuya_command
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Tuya Cloud Custom numbers."""
     devices = hass.data[DOMAIN]["devices"]
@@ -21,7 +22,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class TuyaCloudNumber(NumberEntity):
-    """Tuya Cloud Custom Number."""
+    """Representation of a Tuya Cloud Custom Number."""
 
     def __init__(self, hass, device, dp):
         self._hass = hass
@@ -29,9 +30,12 @@ class TuyaCloudNumber(NumberEntity):
         self._dp = dp
         self._state = None
 
+        # Standardized attributes
         attrs = build_entity_attrs(device, dp, "number")
         self._attr_unique_id = attrs["unique_id"]
         self._attr_has_entity_name = False
+        if "name" in attrs:
+            self._attr_name = attrs["name"]
 
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
@@ -53,12 +57,24 @@ class TuyaCloudNumber(NumberEntity):
         return build_device_info(self._device)
 
     async def async_set_native_value(self, value: float):
-        await send_tuya_command(self._hass, self._device["tuya_device_id"], self._dp["code"], value)
-        self._state = value
-        self.async_write_ha_state()
+        """Send number value command."""
+        response = await self._hass.async_add_executor_job(
+            send_tuya_command,
+            self._hass,
+            self._device["tuya_device_id"],
+            self._dp["code"],
+            value
+        )
+        if response and response.status_code == 200:
+            self._state = value
+            self.async_write_ha_state()
 
-    async def async_update_from_status(self, payload):
-        val = payload["value"]
+    async def async_update(self):
+        """No direct polling — status.py pushes updates."""
+        pass
+
+    async def async_update_from_status(self, val):
+        """Update from poller."""
         try:
             self._state = float(val)
         except (TypeError, ValueError):
