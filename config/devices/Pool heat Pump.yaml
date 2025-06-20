@@ -1,6 +1,5 @@
 - device:
-    ha_name: pool_heat_pump_test
-    friendly_name: Pool HeatPump
+    friendly_name: Pool Heatpump
     tuya_device_id: eb27838708a77766e8gkx9
     local_ip: 192.168.68.174
     local_key: JdwX4n6)EYH|<|2I
@@ -10,7 +9,6 @@
     enabled: true
 
 - switch:
-    friendly_name: Power
     code: switch
     id: '1'
     restore_on_reconnect: false
@@ -18,7 +16,6 @@
     enabled: true
 
 - sensor:
-    friendly_name: Temperature
     code: temp_current_f
     id: '35'
     device_class: temperature
@@ -26,7 +23,6 @@
     enabled: true
 
 - number:
-    friendly_name: Set Temp
     code: set_temp59_104
     id: '196'
     min_value: 59.0
@@ -39,7 +35,6 @@
     enabled: true
 
 - sensor:
-    friendly_name: Fault
     code: fault
     id: '15'
     entity_category: diagnostic

@@ -1,3 +1,5 @@
+"""Tuya Cloud Custom - Number platform."""
+
 import logging
 from homeassistant.components.number import NumberEntity
 from .helpers.helper import build_entity_attrs, build_device_info
@@ -6,6 +8,7 @@ from .const import DOMAIN
 import requests
 
 _LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Tuya Cloud Custom numbers."""
@@ -16,29 +19,32 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             if dp.get("platform") == "number" and dp.get("enabled", True):
                 numbers.append(TuyaCloudNumber(hass, device, dp))
     async_add_entities(numbers)
+    _LOGGER.info("[%s] ✅ Registered %s numbers", DOMAIN, len(numbers))
+
 
 class TuyaCloudNumber(NumberEntity):
-    """Representation of a Tuya Cloud Custom Number."""
+    """Tuya Cloud Custom Number."""
 
     def __init__(self, hass, device, dp):
         self._hass = hass
         self._device = device
         self._dp = dp
+        self._state = None
 
         attrs = build_entity_attrs(device, dp, "number")
         self._attr_unique_id = attrs["unique_id"]
-        self._attr_name = attrs["name"]
-        self._attr_entity_category = attrs.get("entity_category")
+        self._attr_has_entity_name = False  # no automatic binding to Entity ID
+
+        if "entity_category" in attrs:
+            self._attr_entity_category = attrs["entity_category"]
 
         self._attr_native_min_value = dp.get("min_value", 0)
         self._attr_native_max_value = dp.get("max_value", 100)
         self._attr_native_step = dp.get("step_size", 1)
 
-        self._state = None
-
         key = (device["tuya_device_id"], dp["code"])
+        self._hass.data[DOMAIN]["entities"][key] = self
         _LOGGER.debug("[%s] ✅ Registered number entity: %s", DOMAIN, key)
-        hass.data[DOMAIN]["entities"][key] = self
 
     @property
     def native_value(self):
@@ -65,17 +71,15 @@ class TuyaCloudNumber(NumberEntity):
         url_path = f"/v1.0/devices/{device_id}/commands"
         url = f"{base_url}{url_path}"
 
-        payload = {
-            "commands": [{"code": self._dp["code"], "value": value}]
-        }
+        payload = {"commands": [{"code": self._dp["code"], "value": value}]}
 
         t = str(int(time.time() * 1000))
         nonce = str(uuid.uuid4())
         content_str = json.dumps(payload)
-        content_hash = hashlib.sha256(content_str.encode("utf-8")).hexdigest()
+        content_hash = hashlib.sha256(content_str.encode()).hexdigest()
         string_to_sign = f"POST\n{content_hash}\n\n{url_path}"
         sign_str = client_id + access_token + t + nonce + string_to_sign
-        signature = hmac.new(client_secret.encode("utf-8"), sign_str.encode("utf-8"), hashlib.sha256).hexdigest().upper()
+        signature = hmac.new(client_secret.encode(), sign_str.encode(), hashlib.sha256).hexdigest().upper()
 
         headers = {
             "client_id": client_id,
@@ -99,11 +103,11 @@ class TuyaCloudNumber(NumberEntity):
         await self._hass.async_add_executor_job(_do_post)
 
     async def async_update(self):
-        """Polling fallback; we push updates normally."""
+        """Polling fallback (not used)."""
         pass
 
     async def async_update_from_status(self, val):
-        """Update number state from status poller."""
+        """Update number from status."""
         try:
             self._state = float(val)
         except (TypeError, ValueError):

@@ -13,10 +13,9 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
-import requests  # ✅ Called safely in executor!
+import requests  # ✅ Called safely in executor
 
 _LOGGER = logging.getLogger(__name__)
-
 
 class Status:
     """Tuya Cloud Custom: Periodic Status Poller."""
@@ -33,10 +32,9 @@ class Status:
 
     async def async_start_polling(self):
         """Kick off periodic polling for each device."""
-
         for device in self.devices:
             if not device.get("enabled", True):
-                _LOGGER.info("[%s] ⏹️ Device %s is disabled; skipping.", DOMAIN, device.get("ha_name"))
+                _LOGGER.info("[%s] ⏹️ Device %s is disabled; skipping.", DOMAIN, device.get("tuya_device_id"))
                 continue
 
             interval = device.get("poll_interval", 3600)
@@ -48,13 +46,18 @@ class Status:
             if interval <= 0:
                 interval = 3600
 
-            _LOGGER.info("[%s] ⏱️ Scheduling status every %s sec for %s", DOMAIN, interval, device.get("ha_name"))
+            _LOGGER.info("[%s] ⏱️ Scheduling status every %s sec for %s",
+                        DOMAIN, interval, device.get("tuya_device_id"))
+
+            async def _poll_device(now, dev=device):
+                await self.async_fetch_status(dev)
 
             async_track_time_interval(
                 self.hass,
-                lambda now, dev=device: self.hass.loop.create_task(self.async_fetch_status(dev)),
+                _poll_device,
                 timedelta(seconds=interval)
             )
+
 
     async def async_fetch_status(self, device: dict):
         """Fetch status for one device, safely in executor."""
@@ -107,10 +110,10 @@ class Status:
                 if entity:
                     await entity.async_update_from_status(value)
                 else:
-                    _LOGGER.debug("[%s] ⚠️ No entity for %s", DOMAIN, key)
-
+                    _LOGGER.debug("[%s] ⚠️ No entity found for %s (DP: %s)", DOMAIN, key, dp_code)
         else:
-            _LOGGER.error("[%s] ❌ API error for %s: %s", DOMAIN, device["ha_name"], response.text if response else "No response")
+            _LOGGER.error("[%s] ❌ API error for %s: %s",
+                DOMAIN, device.get("tuya_device_id"), response.text if response else "No response")
 
     async def async_fetch_all_devices(self):
         """Manually force-refresh all devices at once (e.g., after token refresh)."""

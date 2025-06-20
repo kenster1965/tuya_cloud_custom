@@ -94,10 +94,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # 6️⃣ Forward platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # 7️⃣ Start status polling manager
-    status = Status(hass)
-    hass.data[DOMAIN]["status"] = status
-    await status.async_start_polling()
+    # 7️⃣ After all platforms done: start Status safely
+    async def _start_status(_):
+        status = Status(hass)
+        hass.data[DOMAIN]["status"] = status
+        await status.async_start_polling()
+
+    # Let the loop finish, then start Status
+    async_call_later(hass, 1, _start_status)
 
     _LOGGER.info("[%s] ✅ Tuya Cloud Custom setup complete!", DOMAIN)
     return True

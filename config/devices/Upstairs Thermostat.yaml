@@ -1,6 +1,4 @@
 - device:
-    ha_name: thermostat-upstairs
-    friendly_name: Upstairs Thermostat
     tuya_device_id: ebbc33438cf6370a5fw9mg
     local_ip: 192.168.68.189
     local_key: #mFM/Z;L.eI#P()r
@@ -8,9 +6,8 @@
     poll_interval: 270
     version: 1
     enabled: false
-    
+
 - climate:
-    friendly_name: Thermostat
     current_temperature_code: temp_current
     current_temperature_dp: '24'
     temperature_command_code: temp_set
@@ -26,7 +23,6 @@
     enabled: false
 
 - switch:
-    friendly_name: Power
     code: switch
     id: '1'
     entity_category: None
@@ -35,7 +31,6 @@
     enabled: true
 
 - switch:
-    friendly_name: Child Lock
     code: child_lock
     id: '40'
     entity_category: None
@@ -44,7 +39,6 @@
     enabled: true
 
 - switch:
-    friendly_name: Backlight
     code: backlight
     id: '44'
     entity_category: None
@@ -53,7 +47,6 @@
     enabled: true
 
 - switch:
-    friendly_name: Eco
     code: eco
     id: '4'
     entity_category: None
@@ -62,7 +55,6 @@
     enabled: true
 
 - switch:
-    friendly_name: Frost
     code: frost
     id: '10'
     entity_category: None
@@ -71,14 +63,12 @@
     enabled: true
 
 - sensor:
-    friendly_name: Heating
     code: valve_state
     id: '36'
     entity_category: None
     enabled: true
 
 - sensor:
-    friendly_name: Battery
     code: battery_percentage
     id: '35'
     entity_category: diagnostic
