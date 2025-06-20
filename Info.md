@@ -76,3 +76,19 @@ custom_components/tuya_cloud_custom/
 │   ├── secrets.yaml          ✅ your secret keys
 │   ├── tuya_devices.yaml     ✅ your device list
 │   ├── tuya_token.json       ✅ always updated here
+
+
+
+
+This means in climate.py you can:
+
+Attribute	From YAML
+unique_id	unique_id
+current temp	current_temperature_code & current_temperature_dp
+target temp	target_temperature_code & target_temperature_dp
+hvac_mode	hvac_modes_code & hvac_modes_dp
+hvac_modes	hvac_modes dict
+min_temp	min_temp
+max_temp	max_temp
+precision	precision
+temperature_unit	temperature_unit

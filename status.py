@@ -47,7 +47,7 @@ class Status:
                 interval = 3600
 
             _LOGGER.info("[%s] ⏱️ Scheduling status every %s sec for %s",
-                        DOMAIN, interval, device.get("tuya_device_id"))
+                         DOMAIN, interval, device.get("tuya_device_id"))
 
             async def _poll_device(now, dev=device):
                 await self.async_fetch_status(dev)
@@ -57,7 +57,6 @@ class Status:
                 _poll_device,
                 timedelta(seconds=interval)
             )
-
 
     async def async_fetch_status(self, device: dict):
         """Fetch status for one device, safely in executor."""
@@ -108,12 +107,13 @@ class Status:
                 key = (device["tuya_device_id"], dp_code)
                 entity = self.hass.data[DOMAIN]["entities"].get(key)
                 if entity:
-                    await entity.async_update_from_status(value)
+                    # ✅ Pass dict for multi-DP climate or simple ones
+                    await entity.async_update_from_status({"code": dp_code, "value": value})
                 else:
                     _LOGGER.debug("[%s] ⚠️ No entity found for %s (DP: %s)", DOMAIN, key, dp_code)
         else:
             _LOGGER.error("[%s] ❌ API error for %s: %s",
-                DOMAIN, device.get("tuya_device_id"), response.text if response else "No response")
+                          DOMAIN, device.get("tuya_device_id"), response.text if response else "No response")
 
     async def async_fetch_all_devices(self):
         """Manually force-refresh all devices at once (e.g., after token refresh)."""
