@@ -98,3 +98,17 @@ hvac_modes:
   heat: heat
   cool: cool
   auto: auto
+
+  for climate at a minimum:
+  - climate:
+    unique_id: upstairs_thermostat
+    current_temperature_code: temp_current
+    target_temperature_code: temp_set
+    hvac_modes_code: mode
+    hvac_modes:
+      off: manual
+      heat: auto
+    min_temp: 59.0
+    max_temp: 104.0
+    precision: 1.0
+    enabled: true

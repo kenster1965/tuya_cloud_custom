@@ -1,4 +1,5 @@
 - device:
+    friendly_name: Thermostat Upstairs
     tuya_device_id: ebbc33438cf6370a5fw9mg
     local_ip: 192.168.68.189
     local_key: #mFM/Z;L.eI#P()r

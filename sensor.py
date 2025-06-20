@@ -7,7 +7,6 @@ from .helpers.helper import build_entity_attrs, build_device_info
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Tuya Cloud Custom sensors."""
     devices = hass.data[DOMAIN]["devices"]
@@ -29,12 +28,9 @@ class TuyaCloudSensor(SensorEntity):
         self._dp = dp
         self._state = None
 
-        # ✅ Standardized attributes
         attrs = build_entity_attrs(device, dp, "sensor")
-
         self._attr_unique_id = attrs["unique_id"]
-        self._attr_has_entity_name = False  # ⬅ disables Name → Entity ID binding
-        # 🚫 DO NOT set self._attr_name → HA will show blank & user can edit freely
+        self._attr_has_entity_name = False
 
         if "device_class" in attrs:
             self._attr_device_class = attrs["device_class"]
@@ -45,9 +41,9 @@ class TuyaCloudSensor(SensorEntity):
         if "native_unit_of_measurement" in attrs:
             self._attr_native_unit_of_measurement = attrs["native_unit_of_measurement"]
 
-        # Register this entity for status updates
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
+
         _LOGGER.debug("[%s] ✅ Registered sensor entity: %s", DOMAIN, key)
 
     @property
@@ -56,11 +52,10 @@ class TuyaCloudSensor(SensorEntity):
 
     @property
     def device_info(self):
-        """Attach to parent device registry entry."""
         return build_device_info(self._device)
 
-    async def async_update_from_status(self, val):
-        """Update sensor from status payload, with type handling."""
+    async def async_update_from_status(self, payload):
+        val = payload["value"]
         if self._dp.get("integer"):
             try:
                 self._state = int(val)
