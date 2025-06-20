@@ -4,7 +4,7 @@ import logging
 from homeassistant.components.number import NumberEntity
 from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
-from .helpers.token_refresh import send_tuya_command
+from .helpers.tuya_command import send_tuya_command
 
 _LOGGER = logging.getLogger(__name__)
 

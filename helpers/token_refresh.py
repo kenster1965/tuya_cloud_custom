@@ -1,108 +1,131 @@
-"""Tuya Cloud Custom: Token refresh + generic Tuya API helper."""
+"""
+Tuya Cloud Custom: Token Refresh Helper
+---------------------------------------
+Handles requesting or refreshing the Tuya Cloud access token.
+"""
 
 import json
-import uuid
 import time
+import uuid
+import yaml
 import hmac
 import hashlib
 import logging
-import requests
-import yaml
+import requests  # only runs in executor
 
 from ..const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def refresh_token(secrets_file: str, token_file: str):
-    """Safely refresh token with current secrets.yaml."""
+def refresh_token(secrets_file, token_file):
+    """Refresh or request a new Tuya Cloud API token."""
+
     try:
-        with open(secrets_file) as f:
+        with open(secrets_file, "r") as f:
             secrets = yaml.safe_load(f)
+
+        client_id = secrets.get("client_id")
+        client_secret = secrets.get("client_secret")
+        base_url = secrets.get("base_url")
+
+        if not client_id or not client_secret or not base_url:
+            _LOGGER.error(f"[{DOMAIN}] ❌ secrets.yaml missing fields.")
+            return
+
+        try:
+            with open(token_file, "r") as f:
+                current_token = json.load(f)
+                refresh_token_val = current_token.get("refresh_token")
+        except FileNotFoundError:
+            _LOGGER.warning(f"[{DOMAIN}] 📂 No token file yet — will request new token.")
+            refresh_token_val = None
+
+        if refresh_token_val:
+            _LOGGER.info(f"[{DOMAIN}] 🔄 Trying to refresh using refresh_token...")
+            success = _refresh_existing(client_id, client_secret, base_url, refresh_token_val, token_file)
+            if success:
+                return
+            _LOGGER.warning(f"[{DOMAIN}] ⚠️ Refresh failed — requesting NEW token instead.")
+
+        _LOGGER.info(f"[{DOMAIN}] 🔑 Requesting NEW token...")
+        _request_new(client_id, client_secret, base_url, token_file)
+
     except Exception as e:
-        _LOGGER.exception("[%s] ❌ Failed to read secrets: %s", DOMAIN, e)
-        return
+        _LOGGER.exception(f"[{DOMAIN}] 💥 Exception in refresh_token: {e}")
 
-    client_id = secrets["client_id"]
-    client_secret = secrets["client_secret"]
-    base_url = secrets["base_url"]
 
-    url_path = "/v1.0/token?grant_type=1"
+def _refresh_existing(client_id, client_secret, base_url, refresh_token_val, token_file):
+    """Refresh an existing token using the refresh_token."""
+    url_path = f"/v1.0/token/{refresh_token_val}"
+    method = "GET"
+
     t = str(int(time.time() * 1000))
     nonce = str(uuid.uuid4())
-    string_to_sign = f"{client_id}{t}{nonce}"
-    sign = hmac.new(
+    content_hash = hashlib.sha256("".encode()).hexdigest()
+    string_to_sign = f"{method}\n{content_hash}\n\n{url_path}"
+    sign_str = f"{client_id}{t}{nonce}{string_to_sign}"
+
+    signature = hmac.new(
         client_secret.encode(),
-        string_to_sign.encode(),
+        sign_str.encode(),
         hashlib.sha256
     ).hexdigest().upper()
 
     headers = {
         "client_id": client_id,
-        "sign": sign,
+        "sign": signature,
         "t": t,
         "sign_method": "HMAC-SHA256",
         "nonce": nonce,
     }
 
     url = f"{base_url}{url_path}"
-    response = requests.get(url, headers=headers, timeout=10)
+    response = requests.get(url, headers=headers)
+    _LOGGER.debug(f"[{DOMAIN}] 🔄 Refresh response: {response.status_code} | {response.text}")
 
     if response.status_code == 200 and response.json().get("success"):
         with open(token_file, "w") as f:
-            json.dump(response.json()["result"], f)
-        _LOGGER.info("[%s] ✅ Token refreshed.", DOMAIN)
+            json.dump(response.json()["result"], f, indent=2)
+        _LOGGER.info(f"[{DOMAIN}] ✅ Token refreshed and saved.")
+        return True
+
+    _LOGGER.warning(f"[{DOMAIN}] ❌ Failed to refresh: {response.status_code} | {response.text}")
+    return False
+
+
+def _request_new(client_id, client_secret, base_url, token_file):
+    """Request a new token from scratch using grant_type=1."""
+    url_path = "/v1.0/token?grant_type=1"
+    method = "GET"
+
+    t = str(int(time.time() * 1000))
+    nonce = str(uuid.uuid4())
+    content_hash = hashlib.sha256("".encode()).hexdigest()
+    string_to_sign = f"{method}\n{content_hash}\n\n{url_path}"
+    sign_str = f"{client_id}{t}{nonce}{string_to_sign}"
+
+    signature = hmac.new(
+        client_secret.encode(),
+        sign_str.encode(),
+        hashlib.sha256
+    ).hexdigest().upper()
+
+    headers = {
+        "client_id": client_id,
+        "sign": signature,
+        "t": t,
+        "sign_method": "HMAC-SHA256",
+        "nonce": nonce,
+    }
+
+    url = f"{base_url}{url_path}"
+    response = requests.get(url, headers=headers)
+    _LOGGER.debug(f"[{DOMAIN}] 🆕 New token response: {response.status_code} | {response.text}")
+
+    if response.status_code == 200 and response.json().get("success"):
+        with open(token_file, "w") as f:
+            json.dump(response.json()["result"], f, indent=2)
+        _LOGGER.info(f"[{DOMAIN}] ✅ New token fetched and saved.")
     else:
-        _LOGGER.error("[%s] ❌ Token refresh failed: %s", DOMAIN, response.text)
-
-
-def send_tuya_command(hass, tuya_id: str, dp_code: str, value):
-    """Generic helper to send Tuya command."""
-    try:
-        secrets = hass.data[DOMAIN]["secrets"]
-        token_file = hass.data[DOMAIN]["token_file"]
-
-        with open(token_file) as f:
-            token_data = json.load(f)
-        access_token = token_data["access_token"]
-
-        client_id = secrets["client_id"]
-        client_secret = secrets["client_secret"]
-        base_url = secrets["base_url"]
-
-        url_path = f"/v1.0/devices/{tuya_id}/commands"
-        url = f"{base_url}{url_path}"
-
-        payload = {
-            "commands": [{"code": dp_code, "value": value}]
-        }
-
-        t = str(int(time.time() * 1000))
-        nonce = str(uuid.uuid4())
-        content_str = json.dumps(payload)
-        content_hash = hashlib.sha256(content_str.encode("utf-8")).hexdigest()
-        string_to_sign = f"POST\n{content_hash}\n\n{url_path}"
-        sign_str = client_id + access_token + t + nonce + string_to_sign
-        signature = hmac.new(
-            client_secret.encode("utf-8"),
-            sign_str.encode("utf-8"),
-            hashlib.sha256
-        ).hexdigest().upper()
-
-        headers = {
-            "client_id": client_id,
-            "access_token": access_token,
-            "sign": signature,
-            "t": t,
-            "sign_method": "HMAC-SHA256",
-            "nonce": nonce,
-            "Content-Type": "application/json",
-        }
-
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        _LOGGER.debug("[%s] ✅ Command %s=%s → %s", DOMAIN, dp_code, value, response.text)
-        return response
-
-    except Exception as e:
-        _LOGGER.exception("[%s] ❌ Failed to send Tuya command: %s", DOMAIN, e)
-        return None
+        _LOGGER.error(f"[{DOMAIN}] ❌ Failed to request new token: {response.status_code} | {response.text}")
