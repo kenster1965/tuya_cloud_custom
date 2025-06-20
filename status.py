@@ -13,9 +13,10 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
-import requests  # ✅ Called safely in executor
+import requests  # ✅ Safe: only in executor
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class Status:
     """Tuya Cloud Custom: Periodic Status Poller."""
@@ -31,7 +32,7 @@ class Status:
         self.token_file = hass.data[DOMAIN]["token_file"]
 
     async def async_start_polling(self):
-        """Kick off periodic polling for each device."""
+        """Start periodic polling for each enabled device."""
         for device in self.devices:
             if not device.get("enabled", True):
                 _LOGGER.info("[%s] ⏹️ Device %s is disabled; skipping.", DOMAIN, device.get("tuya_device_id"))
@@ -59,7 +60,7 @@ class Status:
             )
 
     async def async_fetch_status(self, device: dict):
-        """Fetch status for one device, safely in executor."""
+        """Fetch status for one device via safe executor request."""
 
         def _do_request():
             try:
@@ -106,8 +107,9 @@ class Status:
                 value = dp["value"]
                 key = (device["tuya_device_id"], dp_code)
                 entity = self.hass.data[DOMAIN]["entities"].get(key)
+
                 if entity:
-                    # ✅ Pass dict for multi-DP climate or simple ones
+                    # Pass structured dict for multi-DP entities (like climate)
                     await entity.async_update_from_status({"code": dp_code, "value": value})
                 else:
                     _LOGGER.debug("[%s] ⚠️ No entity found for %s (DP: %s)", DOMAIN, key, dp_code)
@@ -116,6 +118,9 @@ class Status:
                           DOMAIN, device.get("tuya_device_id"), response.text if response else "No response")
 
     async def async_fetch_all_devices(self):
-        """Manually force-refresh all devices at once (e.g., after token refresh)."""
-        tasks = [self.async_fetch_status(device) for device in self.devices if device.get("enabled", True)]
+        """Force-refresh all devices at once (e.g., after token refresh)."""
+        tasks = [
+            self.async_fetch_status(device)
+            for device in self.devices if device.get("enabled", True)
+        ]
         await asyncio.gather(*tasks)

@@ -92,3 +92,9 @@ min_temp	min_temp
 max_temp	max_temp
 precision	precision
 temperature_unit	temperature_unit
+
+hvac_modes:
+  off: manual
+  heat: heat
+  cool: cool
+  auto: auto

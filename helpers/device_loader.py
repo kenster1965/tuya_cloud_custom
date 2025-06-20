@@ -1,22 +1,25 @@
+"""
+Tuya Cloud Custom - Device Loader
+
+Loads all YAML files in config/devices/ and validates required structure.
+Supports multi-DP platforms like climate, plus switch, sensor, number.
+"""
+
 import os
 import yaml
 import logging
+
 from ..const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 def load_tuya_devices(devices_dir: str) -> list:
-    """
-    Load all Tuya devices from individual YAML files in a folder.
-    Each file must contain:
-    - one 'device:' block
-    - one or more entity blocks: switch:, sensor:, number: ...
-    """
+    """Load all device YAMLs in the given directory."""
 
     devices = []
 
     if not os.path.isdir(devices_dir):
-        _LOGGER.error(f"[{DOMAIN}] ❌ Devices directory not found: {devices_dir}")
+        _LOGGER.error("[%s] ❌ Devices directory does not exist: %s", DOMAIN, devices_dir)
         return devices
 
     for file_name in os.listdir(devices_dir):
@@ -27,53 +30,68 @@ def load_tuya_devices(devices_dir: str) -> list:
 
         try:
             with open(file_path, "r") as f:
-                yaml_data = yaml.safe_load(f) or []
+                content = yaml.safe_load(f)
         except Exception as e:
-            _LOGGER.error(f"[{DOMAIN}] ❌ Failed to load {file_name}: {e}")
+            _LOGGER.exception("[%s] ❌ Error reading %s: %s", DOMAIN, file_name, e)
             continue
 
-        # Find the device block
-        device_block = None
-        entity_blocks = []
+        if not content or not isinstance(content, list):
+            _LOGGER.warning("[%s] ⚠️ File %s is not a list of blocks — skipping.", DOMAIN, file_name)
+            continue
 
-        for item in yaml_data:
-            if "device" in item:
-                device_block = item["device"]
+        # Extract device info + all platforms in this file
+        device_conf = None
+        entities = []
+
+        for block in content:
+            if "device" in block:
+                device_conf = block["device"]
+            elif "climate" in block:
+                dp = block["climate"]
+                # ✅ Climate required fields checklist
+                required_keys = [
+                    "unique_id",
+                    "current_temperature_code",
+                    "target_temperature_code",
+                    "hvac_modes_code",
+                    "hvac_modes"
+                ]
+                missing = [k for k in required_keys if k not in dp]
+                if missing:
+                    _LOGGER.error("[%s] ❌ Climate block missing keys %s in %s", DOMAIN, missing, file_name)
+                    continue
+                dp["platform"] = "climate"
+                entities.append(dp)
+            elif "switch" in block:
+                dp = block["switch"]
+                dp["platform"] = "switch"
+                entities.append(dp)
+            elif "sensor" in block:
+                dp = block["sensor"]
+                dp["platform"] = "sensor"
+                entities.append(dp)
+            elif "number" in block:
+                dp = block["number"]
+                dp["platform"] = "number"
+                entities.append(dp)
             else:
-                # must be a switch, sensor, number, etc.
-                entity_blocks.append(item)
+                _LOGGER.warning("[%s] ⚠️ Unknown block in %s: %s", DOMAIN, file_name, block)
 
-        if not device_block:
-            _LOGGER.warning(f"[{DOMAIN}] ⚠️ No 'device:' block found in {file_name} — skipping.")
+        if not device_conf:
+            _LOGGER.error("[%s] ❌ File %s missing top-level 'device:' block!", DOMAIN, file_name)
             continue
 
-        if not device_block.get("enabled", True):
-            _LOGGER.info(f"[{DOMAIN}] ⏹️ Skipping disabled device in {file_name}.")
+        if not entities:
+            _LOGGER.warning("[%s] ⚠️ No valid entities found in %s — skipping.", DOMAIN, file_name)
             continue
 
-        ha_name = device_block.get("ha_name", "unknown")
-        device_block["entities"] = []
+        # ✅ Compose device entry
+        device_conf.setdefault("enabled", True)
+        device_conf.setdefault("poll_interval", 60)
+        device_conf["entities"] = entities
 
-        for ent in entity_blocks:
-            if not isinstance(ent, dict) or len(ent) != 1:
-                _LOGGER.warning(f"[{DOMAIN}] ⚠️ Invalid entity format in {file_name}, skipping entity: {ent}")
-                continue
-
-            platform, conf = next(iter(ent.items()))
-            if not conf.get("enabled", True):
-                continue
-
-            conf["platform"] = platform  # track platform type explicitly
-            device_block["entities"].append(conf)
-
-        _LOGGER.info(
-            f"[{DOMAIN}] ✅ Loaded {ha_name} from {file_name} with "
-            f"{len(device_block['entities'])} entities."
-        )
-
-        devices.append(device_block)
-
-    if not devices:
-        _LOGGER.warning(f"[{DOMAIN}] ⚠️ No valid enabled devices found in {devices_dir}")
+        devices.append(device_conf)
+        _LOGGER.info("[%s] ✅ Loaded %s with %s entities from %s",
+                     DOMAIN, device_conf.get("tuya_device_id"), len(entities), file_name)
 
     return devices
