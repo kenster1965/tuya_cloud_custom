@@ -57,7 +57,11 @@ class TuyaCloudNumber(NumberEntity):
         return build_device_info(self._device)
 
     async def async_set_native_value(self, value: float):
-        """Send number value command."""
+        """Send number value command with correct type."""
+        # ✅ If step_size >= 1, cast to int
+        if self._dp.get("step_size", 1) >= 1:
+            value = int(value)
+
         response = await self._hass.async_add_executor_job(
             send_tuya_command,
             self._hass,

@@ -36,26 +36,29 @@ class TuyaCloudClimate(ClimateEntity):
         self._attr_unique_id = dp.get("unique_id")
         self._attr_has_entity_name = False
 
-        # Temp & HVAC states
+        # State holders
         self._current_temp = None
         self._target_temp = None
         self._hvac_mode = HVACMode.OFF
 
-        # Switch (optional)
+        # Optional switch
         self._switch_state = None
         self._has_switch = bool(dp.get("switch_code"))
 
-        # Supported HVAC modes
+        # Supported HVAC modes map
         self._modes_map = dp.get("hvac_modes", {})
         self._attr_hvac_modes = list(self._modes_map.keys())
 
-        # Units & limits
+        # Units & constraints
         self._attr_temperature_unit = dp.get("temperature_unit", UnitOfTemperature.CELSIUS)
         self._attr_min_temp = dp.get("min_temp", 10.0)
         self._attr_max_temp = dp.get("max_temp", 35.0)
         self._attr_precision = dp.get("precision", 1.0)
 
-        # Register both primary & related keys
+        # DP value tracking
+        self._mode_value = None
+
+        # Register for status updates
         tid = device["tuya_device_id"]
         for code in [dp["current_temperature_code"], dp["target_temperature_code"],
                      dp["hvac_modes_code"], dp.get("switch_code")]:
@@ -97,7 +100,7 @@ class TuyaCloudClimate(ClimateEntity):
             self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
-        """Handle mode change, uses switch + mode if needed."""
+        """Handle HVAC mode change."""
         mode_val = self._dp["hvac_modes"].get(hvac_mode)
         tid = self._device["tuya_device_id"]
 
@@ -128,25 +131,39 @@ class TuyaCloudClimate(ClimateEntity):
         pass
 
     async def async_update_from_status(self, payload):
-        """Update called by Status manager."""
+        """Update state from status poller."""
         dp_code = payload["code"]
         value = payload["value"]
 
         if dp_code == self._dp["current_temperature_code"]:
             self._current_temp = float(value)
+
         elif dp_code == self._dp["target_temperature_code"]:
             self._target_temp = float(value)
+
         elif dp_code == self._dp["hvac_modes_code"]:
-            # Invert map: DP value → HA mode
-            for ha_mode, dp_mode in self._modes_map.items():
-                if dp_mode == value:
-                    self._hvac_mode = ha_mode
-                    break
+            self._mode_value = str(value)
+
         elif self._has_switch and dp_code == self._dp["switch_code"]:
-            if not value:
-                self._hvac_mode = HVACMode.OFF
+            self._switch_state = bool(value)
+
         else:
             _LOGGER.warning("[%s] ⚠️ Unexpected climate payload: %s", DOMAIN, payload)
 
-        _LOGGER.debug("[%s] ✅ Updated climate %s from %s: %s", DOMAIN, self._attr_unique_id, dp_code, value)
+        # Resolve final HA hvac_mode robustly
+        resolved_mode = HVACMode.OFF  # fallback
+
+        if self._has_switch and self._switch_state is False:
+            resolved_mode = HVACMode.OFF
+        else:
+            for ha_mode, tuya_val in self._modes_map.items():
+                if self._mode_value == tuya_val:
+                    resolved_mode = ha_mode
+                    break
+
+        self._hvac_mode = resolved_mode
+
+        self._hvac_mode = new_mode
+
+        _LOGGER.debug("[%s] ✅ Updated climate %s | %s = %s", DOMAIN, self._attr_unique_id, dp_code, value)
         self.async_write_ha_state()
