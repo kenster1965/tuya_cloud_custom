@@ -4,7 +4,7 @@
     local_ip: 192.168.68.189
     local_key: #mFM/Z;L.eI#P()r
     category: wk
-    poll_interval: 270
+    poll_interval: 60
     version: 1
     enabled: true
 
@@ -20,7 +20,7 @@
     hvac_modes_code: mode
     hvac_modes_dp: '2'
     hvac_modes:
-      off: manual
+      #off: manual
       heat: auto
     min_temp: 59.0
     max_temp: 104.0
@@ -73,4 +73,5 @@
     id: '35'
     entity_category: diagnostic
     device_class: battery
+    unit_of_measurement: '%'
     enabled: true

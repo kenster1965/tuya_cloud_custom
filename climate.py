@@ -36,27 +36,30 @@ class TuyaCloudClimate(ClimateEntity):
         self._attr_unique_id = dp.get("unique_id")
         self._attr_has_entity_name = False
 
-        # State holders
+        # Temp & HVAC states
         self._current_temp = None
         self._target_temp = None
         self._hvac_mode = HVACMode.OFF
 
-        # Optional switch
+        # Switch (optional)
         self._switch_state = None
         self._has_switch = bool(dp.get("switch_code"))
 
-        # Supported HVAC modes map
+        # Supported HVAC modes
         self._modes_map = dp.get("hvac_modes", {})
         self._attr_hvac_modes = list(self._modes_map.keys())
 
-        # Units & constraints
-        self._attr_temperature_unit = dp.get("temperature_unit", UnitOfTemperature.CELSIUS)
+        # ✅ Proper unit parsing
+        unit_raw = dp.get("temperature_unit", "C")
+        if unit_raw.lower() in ["f", "°f"]:
+            self._attr_temperature_unit = UnitOfTemperature.FAHRENHEIT
+        else:
+            self._attr_temperature_unit = UnitOfTemperature.CELSIUS
+
+        # Limits
         self._attr_min_temp = dp.get("min_temp", 10.0)
         self._attr_max_temp = dp.get("max_temp", 35.0)
         self._attr_precision = dp.get("precision", 1.0)
-
-        # DP value tracking
-        self._mode_value = None
 
         # Register for status updates
         tid = device["tuya_device_id"]
@@ -81,6 +84,8 @@ class TuyaCloudClimate(ClimateEntity):
 
     @property
     def hvac_mode(self):
+        if self._has_switch and self._switch_state is False:
+            return HVACMode.OFF
         return self._hvac_mode
 
     async def async_set_temperature(self, **kwargs):
@@ -100,7 +105,7 @@ class TuyaCloudClimate(ClimateEntity):
             self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
-        """Handle HVAC mode change."""
+        """Handle mode change, uses switch + mode if needed."""
         mode_val = self._dp["hvac_modes"].get(hvac_mode)
         tid = self._device["tuya_device_id"]
 
@@ -131,39 +136,24 @@ class TuyaCloudClimate(ClimateEntity):
         pass
 
     async def async_update_from_status(self, payload):
-        """Update state from status poller."""
+        """Update called by Status manager."""
         dp_code = payload["code"]
         value = payload["value"]
 
         if dp_code == self._dp["current_temperature_code"]:
             self._current_temp = float(value)
-
         elif dp_code == self._dp["target_temperature_code"]:
             self._target_temp = float(value)
-
         elif dp_code == self._dp["hvac_modes_code"]:
-            self._mode_value = str(value)
-
+            # Invert map: DP value → HA mode
+            for ha_mode, dp_mode in self._modes_map.items():
+                if dp_mode == value:
+                    self._hvac_mode = ha_mode
+                    break
         elif self._has_switch and dp_code == self._dp["switch_code"]:
             self._switch_state = bool(value)
-
         else:
             _LOGGER.warning("[%s] ⚠️ Unexpected climate payload: %s", DOMAIN, payload)
 
-        # Resolve final HA hvac_mode robustly
-        resolved_mode = HVACMode.OFF  # fallback
-
-        if self._has_switch and self._switch_state is False:
-            resolved_mode = HVACMode.OFF
-        else:
-            for ha_mode, tuya_val in self._modes_map.items():
-                if self._mode_value == tuya_val:
-                    resolved_mode = ha_mode
-                    break
-
-        self._hvac_mode = resolved_mode
-
-        self._hvac_mode = new_mode
-
-        _LOGGER.debug("[%s] ✅ Updated climate %s | %s = %s", DOMAIN, self._attr_unique_id, dp_code, value)
+        _LOGGER.debug("[%s] ✅ Updated climate %s from %s: %s", DOMAIN, self._attr_unique_id, dp_code, value)
         self.async_write_ha_state()
