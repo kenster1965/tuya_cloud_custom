@@ -11,6 +11,7 @@
 - switch:
     code: switch
     id: '1'
+    type: boolean
     restore_on_reconnect: false
     is_passive_entity: false
     enabled: true
@@ -18,6 +19,7 @@
 - sensor:
     code: temp_current_f
     id: '35'
+    type: integer
     device_class: temperature
     unit_of_measurement: '°F'
     enabled: true
@@ -25,9 +27,10 @@
 - number:
     code: set_temp59_104
     id: '196'
-    min_value: 59.0
-    max_value: 104.0
-    step_size: 1.0
+    type: integer
+    min_value: 59
+    max_value: 104
+    step_size: 1
     restore_on_reconnect: false
     is_passive_entity: false
     device_class: temperature
@@ -37,6 +40,7 @@
 - sensor:
     code: fault
     id: '15'
+    type: bitfield
     entity_category: diagnostic
     integer: true
     enabled: true

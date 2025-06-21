@@ -28,17 +28,21 @@ class TuyaCloudSwitch(SwitchEntity):
         self._hass = hass
         self._device = device
         self._dp = dp
+
         self._state = False
 
-        # Standardized attributes
         attrs = build_entity_attrs(device, dp, "switch")
         self._attr_unique_id = attrs["unique_id"]
-        self._attr_has_entity_name = False  # use unique_id for Entity ID only
+        self._attr_has_entity_name = False
+
         if "name" in attrs:
             self._attr_name = attrs["name"]
 
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
+
+        # ✅ Explicit DP type
+        self._dp_type = dp.get("type", "boolean")
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
@@ -58,25 +62,51 @@ class TuyaCloudSwitch(SwitchEntity):
     async def async_turn_off(self, **kwargs):
         await self._send_tuya_command(False)
 
-    async def _send_tuya_command(self, state: bool):
-        """Send switch command safely using helper."""
+    async def _send_tuya_command(self, state):
+        """Send switch command with correct DP type."""
+        # Convert True/False to proper type for Tuya
+        if self._dp_type == "boolean":
+            value = bool(state)
+        elif self._dp_type == "integer":
+            value = int(state)
+        elif self._dp_type == "float":
+            value = float(state)
+        elif self._dp_type == "enum":
+            value = str(state).lower()  # e.g. "on"/"off" if your enum expects that
+        else:
+            value = state
+
         response = await self._hass.async_add_executor_job(
             send_tuya_command,
             self._hass,
             self._device["tuya_device_id"],
             self._dp["code"],
-            state
+            value
         )
         if response and response.status_code == 200:
-            self._state = state
+            self._state = bool(state)
             self.async_write_ha_state()
 
     async def async_update(self):
-        """No direct polling — status.py pushes updates."""
+        """No polling — status pushes updates."""
         pass
 
     async def async_update_from_status(self, val):
-        """Update from poller."""
-        self._state = bool(val)
+        """Update from status manager with DP type."""
+        try:
+            if self._dp_type == "boolean":
+                self._state = bool(val)
+            elif self._dp_type == "integer":
+                self._state = bool(int(val))
+            elif self._dp_type == "float":
+                self._state = bool(float(val))
+            elif self._dp_type == "enum":
+                self._state = str(val).lower() not in ("off", "false", "0")
+            else:
+                self._state = bool(val)
+        except Exception as e:
+            _LOGGER.warning("[%s] ⚠️ Switch type cast error: %s", DOMAIN, e)
+            self._state = bool(val)
+
         _LOGGER.debug("[%s] ✅ Updated %s: %s", DOMAIN, self._attr_unique_id, self._state)
         self.async_write_ha_state()
