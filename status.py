@@ -1,3 +1,5 @@
+"""Tuya Cloud Custom: Periodic Status Poller."""
+
 import asyncio
 import logging
 import json
@@ -10,11 +12,11 @@ from datetime import timedelta
 
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.core import HomeAssistant
+from .climate import TuyaCloudClimate
 
 from .const import DOMAIN
-from .climate import TuyaCloudClimate  # ✅ Import your climate class
 
-import requests  # Runs safely in executor
+import requests  # Runs in executor only
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,23 +35,18 @@ class Status:
         self.token_file = hass.data[DOMAIN]["token_file"]
 
     async def async_start_polling(self):
-        """Kick off periodic polling for each device."""
+        """Start polling each device at its configured interval."""
+
         for device in self.devices:
             if not device.get("enabled", True):
-                _LOGGER.info("[%s] ⏹️ Device %s is disabled; skipping.", DOMAIN, device["tuya_device_id"])
+                _LOGGER.info("[%s] ⏹️ Device %s is disabled; skipping.", DOMAIN, device.get("tuya_device_id"))
                 continue
 
-            interval = device.get("poll_interval", 3600)
-            try:
-                interval = int(interval)
-            except ValueError:
-                interval = 3600
-
+            interval = int(device.get("poll_interval", 3600))
             if interval <= 0:
                 interval = 3600
 
-            _LOGGER.info("[%s] ⏱️ Scheduling status every %s sec for %s",
-                         DOMAIN, interval, device["tuya_device_id"])
+            _LOGGER.info("[%s] ⏱️ Scheduling status every %s sec for %s", DOMAIN, interval, device["tuya_device_id"])
 
             async def _poll_device(now, dev=device):
                 await self.async_fetch_status(dev)
@@ -61,7 +58,7 @@ class Status:
             )
 
     async def async_fetch_status(self, device: dict):
-        """Fetch status for one device, safely in executor."""
+        """Fetch status from Tuya API for a single device."""
 
         def _do_request():
             try:
@@ -77,6 +74,7 @@ class Status:
                 content_hash = hashlib.sha256("".encode()).hexdigest()
                 string_to_sign = f"{method}\n{content_hash}\n\n{url_path}"
                 sign_str = self.client_id + access_token + t + nonce + string_to_sign
+
                 signature = hmac.new(
                     self.client_secret.encode(),
                     sign_str.encode(),
@@ -95,6 +93,7 @@ class Status:
                 url = f"{self.base_url}{url_path}"
                 response = requests.get(url, headers=headers, timeout=10)
                 return response
+
             except Exception as e:
                 _LOGGER.exception("[%s] ❌ Exception in status request: %s", DOMAIN, e)
                 return None
@@ -103,25 +102,27 @@ class Status:
 
         if response and response.status_code == 200 and response.json().get("success"):
             payload = response.json()["result"]
+
             for dp in payload:
                 dp_code = dp["code"]
                 value = dp["value"]
                 key = (device["tuya_device_id"], dp_code)
                 entity = self.hass.data[DOMAIN]["entities"].get(key)
+
                 if entity:
-                    if isinstance(entity, TuyaCloudClimate):
+                    if isinstance(entity, TuyaCloudClimate):  # or check .__class__.__name__
                         await entity.async_update_from_status({"code": dp_code, "value": value})
                     else:
                         await entity.async_update_from_status(value)
                 else:
-                    _LOGGER.debug("[%s] ⚠️ No entity found for %s (DP: %s)", DOMAIN, key, dp_code)
+                    _LOGGER.debug("[%s] ⚠️ No entity registered for %s (DP: %s)", DOMAIN, key, dp_code)
+
         else:
             _LOGGER.error("[%s] ❌ API error for %s: %s",
-                          DOMAIN, device["tuya_device_id"],
-                          response.text if response else "No response")
+                DOMAIN, device["tuya_device_id"], response.text if response else "No response")
 
     async def async_fetch_all_devices(self):
-        """Manually force-refresh all devices at once (e.g., after token refresh)."""
+        """Manually force-refresh all devices immediately."""
         tasks = [
             self.async_fetch_status(device)
             for device in self.devices if device.get("enabled", True)

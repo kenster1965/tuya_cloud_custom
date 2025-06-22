@@ -48,15 +48,24 @@ def load_tuya_devices(devices_dir: str) -> list:
                 device_conf = block["device"]
             elif "climate" in block:
                 dp = block["climate"]
-                # ✅ Climate required fields checklist
-                required_keys = [
-                    "unique_id",
-                    "current_temperature_code",
-                    "target_temperature_code",
-                    "hvac_modes_code",
-                    "hvac_modes"
-                ]
+                # ✅ New required top-level keys
+                required_keys = ["current_temperature", "target_temperature", "hvac_mode"]
                 missing = [k for k in required_keys if k not in dp]
+                valid = True
+
+                # Also ensure sub-keys exist:
+                if "current_temperature" in dp and "code" not in dp["current_temperature"]:
+                    missing.append("current_temperature.code")
+                    valid = False
+                if "target_temperature" in dp and "code" not in dp["target_temperature"]:
+                    missing.append("target_temperature.code")
+                    valid = False
+                if "hvac_mode" in dp and not isinstance(dp["hvac_mode"], dict):
+                    missing.append("hvac_mode must be a dict of modes")
+                    valid = False
+                elif "hvac_mode" in dp and not any(isinstance(v, dict) for v in dp["hvac_mode"].values()):
+                    missing.append("hvac_mode must define at least one mode with dict fields")
+                    valid = False
                 if missing:
                     _LOGGER.error("[%s] ❌ Climate block missing keys %s in %s", DOMAIN, missing, file_name)
                     continue

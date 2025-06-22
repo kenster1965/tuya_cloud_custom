@@ -1,4 +1,4 @@
-"""Tuya Cloud Custom - Sensor platform."""
+"""Tuya Cloud Custom - Robust Sensor platform with translate support."""
 
 import logging
 from homeassistant.components.sensor import SensorEntity
@@ -6,7 +6,6 @@ from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
 
 _LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Tuya Cloud Custom sensors."""
@@ -21,7 +20,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class TuyaCloudSensor(SensorEntity):
-    """Tuya Cloud Custom Sensor."""
+    """Tuya Cloud Custom Sensor with type+translate."""
 
     def __init__(self, hass, device, dp):
         self._hass = hass
@@ -29,7 +28,6 @@ class TuyaCloudSensor(SensorEntity):
         self._dp = dp
         self._state = None
 
-        # Standard attributes
         attrs = build_entity_attrs(device, dp, "sensor")
         self._attr_unique_id = attrs["unique_id"]
         self._attr_has_entity_name = False
@@ -39,10 +37,12 @@ class TuyaCloudSensor(SensorEntity):
 
         self._attr_device_class = attrs.get("device_class")
         self._attr_entity_category = attrs.get("entity_category")
+
         self._attr_native_unit_of_measurement = attrs.get("native_unit_of_measurement")
 
-        # ✅ Store explicit type if present
+        # ✅ Type and translate map
         self._dp_type = dp.get("type", "string")
+        self._translated = dp.get("translated", {})
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
@@ -62,24 +62,45 @@ class TuyaCloudSensor(SensorEntity):
         pass
 
     async def async_update_from_status(self, value):
-        """Update from Status manager with proper type handling."""
-        dp_type = self._dp_type  # already stored in __init__ as lowercase
-        raw = value
-
+        """Update from Status manager with translate for all types and detailed debug."""
         try:
-            if dp_type == "boolean":
-                self._state = bool(raw)
-            elif dp_type in ("integer", "bitfield"):
-                self._state = int(raw)
-            elif dp_type == "float":
-                self._state = float(raw)
-            elif dp_type in ("enum", "string"):
-                self._state = str(raw)
+            parsed = value
+            if self._dp_type == "boolean":
+                parsed = bool(value)
+            elif self._dp_type == "integer":
+                parsed = int(value)
+            elif self._dp_type == "float":
+                parsed = float(value)
+            elif self._dp_type == "bitfield":
+                parsed = int(value)
             else:
-                self._state = raw  # fallback
-        except (TypeError, ValueError):
-            self._state = raw
+                parsed = str(value)
 
-        _LOGGER.debug("[%s] ✅ Updated %s: %s", DOMAIN, self._attr_unique_id, self._state)
+            # ✅ Normalize to string for translation lookup for consistent matching
+            parsed_str = str(parsed)
+            if self._translated:
+                # Try exact match int first, then string fallback from yaml
+                translated = (
+                    self._translated.get(parsed)
+                    or self._translated.get(parsed_str)
+                    or parsed
+                )
+
+                _LOGGER.debug(
+                    "[%s] ⚙️ Sensor %s: raw=%s | parsed=%s | translate_keys=%s | final=%s",
+                    DOMAIN,
+                    self._attr_unique_id,
+                    value,
+                    parsed,
+                    list(self._translated.keys()),
+                    translated
+                )
+                self._state = translated
+            else:
+                self._state = parsed
+
+        except (TypeError, ValueError) as e:
+            _LOGGER.exception("[%s] ❌ Failed to parse sensor value: %s", DOMAIN, e)
+            self._state = value
+
         self.async_write_ha_state()
-

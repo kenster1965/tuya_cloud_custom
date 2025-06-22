@@ -8,26 +8,30 @@
 
 - climate:
     unique_id: upstairs_thermostat
-    current_temperature_code: temp_current
-    current_temperature_dp: '24'
-    current_temperature_type: integer
-    temperature_unit: '°F'
-    target_temperature_code: temp_set
-    target_temperature_dp: '16'
-    target_temperature_type: integer
-    switch_code: switch
-    switch_id: '1'
-    switch_type: boolean
-    hvac_modes_code: mode
-    hvac_modes_id: '2'
-    hvac_modes_type: enum
-    hvac_modes:
-      off: manual
-      heat: auto
-    min_temp: 40
-    max_temp: 90
-    precision: 1
     enabled: true
+    temp_convert: "c_to_f"
+    current_temperature:
+      code: temp_current
+      dp: '24'
+      type: integer
+    target_temperature:
+      code: temp_set
+      dp: '16'
+      type: integer
+      min_temp: 40
+      max_temp: 90
+      precision: 1
+    on_off:
+      code: switch
+      dp: '1'
+      type: boolean
+    hvac_mode:
+      code: mode
+      dp: '2'
+      type: enum
+      modes:
+        heat: 'manual'
+        # heat_cool: 'auto'
 
 - switch:
     code: child_lock
@@ -55,6 +59,9 @@
     code: valve_state
     id: '36'
     type: enum
+    translated:  # Optional: Translated values for the enum
+      open: 'Heating'
+      close: 'Off'
     enabled: true
 
 - sensor:

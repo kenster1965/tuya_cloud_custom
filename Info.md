@@ -1,18 +1,4 @@
 
-tuya_devices.yaml
-
-Field in YAML	Purpose
-ha_name	        HA entity ID (should be unique)
-tuya_device_id	Device ID for Tuya API (used in commands)
-friendly_name	User-facing name for cards/entities
-dps[].id	    Data Point (DP) ID for Tuya commands
-dps[].code	    DP code name (human-readable)
-dps[].platform	HA platform type: sensor, switch, etc.
-enabled	Whether to include the device/dp
-
-explain that code is what is used, not so much dp id numbers
-
-explaine about integer: true
 
 list a few device classes:
 temperature	    Temperature sensor	    °C / °F
@@ -34,22 +20,7 @@ monetary	    Currency value (e.g. cost of energy)	$ / €
 timestamp	    Time value (ISO date/time string)	    —
 
 
-tuya_cloud_custom/
-├── config/              <-- configs & secrets
-├── helpers/             <-- helper scripts
-├── platform files       <-- number.py, sensor.py, switch.py
-├── __init__.py
-├── manifest.json
-├── tuya_status.py       <-- maybe your polling logic
-└── Info.md
 
-__init__.py	                        Loads the YAML once & stores the list in hass.data
-switch.py, sensor.py, number.py	    Use that list to instantiate real HA Entity subclasses
-
-__init__.py → load YAML → store in hass.data
-platform.py (e.g., switch.py) → read hass.data → create Entities
-
-Later I want register this as a HA serviceto tuya_cloud_custom.refresh_token for easy automation.
 
 entity_category should either be: a valid string like "diagnostic" or "config",
 
@@ -82,33 +53,37 @@ custom_components/tuya_cloud_custom/
 
 This means in climate.py you can:
 
-Attribute	From YAML
-unique_id	unique_id
-current temp	current_temperature_code & current_temperature_dp
-target temp	target_temperature_code & target_temperature_dp
-hvac_mode	hvac_modes_code & hvac_modes_dp
-hvac_modes	hvac_modes dict
-min_temp	min_temp
-max_temp	max_temp
-precision	precision
-temperature_unit	temperature_unit
 
-hvac_modes:
-  off: manual
-  heat: heat
-  cool: cool
-  auto: auto
 
-  for climate at a minimum:
-  - climate:
-    unique_id: upstairs_thermostat
-    current_temperature_code: temp_current
-    target_temperature_code: temp_set
-    hvac_modes_code: mode
-    hvac_modes:
-      off: manual
-      heat: auto
-    min_temp: 59.0
-    max_temp: 104.0
-    precision: 1.0
-    enabled: true
+| HA `HVACMode` | Meaning                           |
+| ------------- | --------------------------------- |
+| `off`         | System is off                     |
+| `heat`        | Heat mode                         |
+| `cool`        | Cool mode                         |
+| `heat_cool`   | Auto (heat or cool automatically) |
+| `auto`        | Fully automatic                   |
+| `dry`         | Dry / Dehumidify                  |
+| `fan_only`    | Fan only                          |
+
+
+
+Field	Meaning
+temp_convert	"c_to_f" → raw DP is C, convert to F before showing
+"f_to_c" → raw DP is F, convert to C
+If missing → no conversion, use raw
+No more temperature_unit	The display unit is inferred from the temp_convert value
+
+- climate:
+    on_off:        # ✅ Optional switch for OFF
+      code: switch
+      type: boolean
+
+    hvac_mode:     # ✅ Always present: Tuya mode DP
+      code: mode
+      dp: '2'
+      type: enum
+      modes:       # ✅ Explicit HA → Tuya map
+        heat: 'manual'
+        heat_cool: 'auto'
+
+

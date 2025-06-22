@@ -41,6 +41,8 @@
     code: fault
     id: '15'
     type: bitfield
+    translated:  # Optional: Translated values for the enum
+      0: 'No Fault'
+      1: 'Water Off!'
     entity_category: diagnostic
-    integer: true
     enabled: true
