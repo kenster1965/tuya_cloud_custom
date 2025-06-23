@@ -59,5 +59,5 @@ def build_device_info(device: dict) -> dict:
         "identifiers": {(DOMAIN, device["tuya_device_id"])},
         "name": device.get("friendly_name"),  # optional: shows nicely in Devices panel
         "manufacturer": "Tuya",
-        "model": device.get("category", "Unknown"),
+        "model": device.get("tuya_category", "Unknown"),
     }

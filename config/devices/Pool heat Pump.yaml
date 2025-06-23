@@ -3,14 +3,14 @@
     tuya_device_id: eb27838708a77766e8gkx9
     local_ip: 192.168.68.174
     local_key: JdwX4n6)EYH|<|2I
-    category: znrb
+    tuya_category: znrb
     poll_interval: 60
     version: 1
     enabled: true
 
 - switch:
     code: switch
-    id: '1'
+    dp: '1'
     type: boolean
     restore_on_reconnect: false
     is_passive_entity: false
@@ -18,7 +18,7 @@
 
 - sensor:
     code: temp_current_f
-    id: '35'
+    dp: '35'
     type: integer
     device_class: temperature
     unit_of_measurement: '°F'
@@ -26,7 +26,7 @@
 
 - number:
     code: set_temp59_104
-    id: '196'
+    dp: '196'
     type: integer
     min_value: 59
     max_value: 104
@@ -39,7 +39,7 @@
 
 - sensor:
     code: fault
-    id: '15'
+    dp: '15'
     type: bitfield
     translated:  # Optional: Translated values for the enum
       0: 'No Fault'

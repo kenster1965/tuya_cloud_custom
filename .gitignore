@@ -9,9 +9,8 @@
 !*.js*
 
 # Ignored folders!!
-
+config/devices
 
 # I want these files ignored!!
 secrets.yaml
 tuya_token.json
-tuya_devices.yaml

@@ -1,7 +1,7 @@
 - device:
     friendly_name: Thermostat Upstairs
     tuya_device_id: ebbc33438cf6370a5fw9mg
-    category: wk
+    tuya_category: wk
     poll_interval: 60
     version: 1
     enabled: true
@@ -35,7 +35,7 @@
 
 - switch:
     code: child_lock
-    id: '40'
+    dp: '40'
     type: boolean
     restore_on_reconnect: false
     is_passive_entity: false
@@ -44,7 +44,7 @@
 
 - number:
     code: backlight
-    id: '44'
+    dp: '44'
     type: integer
     min_value: 0
     max_value: 100
@@ -57,7 +57,7 @@
 
 - sensor:
     code: valve_state
-    id: '36'
+    dp: '36'
     type: enum
     translated:  # Optional: Translated values for the enum
       open: 'Heating'
@@ -66,7 +66,7 @@
 
 - sensor:
     code: battery_percentage
-    id: '35'
+    dp: '35'
     type: integer
     entity_category: diagnostic
     device_class: battery
