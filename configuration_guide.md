@@ -8,6 +8,43 @@ This document explains **how to write robust, flexible YAML files** to fully con
 
 ---
 
+## 🔑 secrets.yaml — Tuya Cloud API Credentials
+Your Tuya Cloud Custom integration requires a secrets.yaml file in your Home Assistant /config directory. This file securely stores your Tuya Cloud API credentials and connection settings.
+
+## ✅ Required Fields
+| Field           | Required | Description                                                                                           |
+| --------------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| `client_id`     | ✅        | Tuya IoT project Client ID.                                                                           |
+| `client_secret` | ✅        | Tuya IoT project Client Secret.                                                                       |
+| `base_url`      | ✅        | Tuya API region URL — e.g. `https://openapi.tuyaus.com` (US), `https://openapi.tuyaeu.com` (EU), etc. |
+| `token_refresh` | ✅        | How often to refresh the access token (in minutes). **Recommended: 110 minutes**.                     |
+
+## 📝 Optional Fields
+| Field          | Required | Description                                               |
+| -------------- | -------- | --------------------------------------------------------- |
+| `Name`         | optional | Friendly name for your project (for your reference only). |
+| `username`     | optional | Your Tuya IoT account email or phone number (optional).   |
+| `password`     | optional | Your Tuya IoT account password (optional).                |
+| `user_id`      | optional | Tuya Cloud user ID (optional).                            |
+| `project_code` | optional | Your project identifier (optional).                       |
+
+## 📂 Example secrets.yaml
+```yaml
+Name: "Ken's Custom Cloud Tuya"
+client_id: "YOUR_CLIENT_ID"
+client_secret: "YOUR_CLIENT_SECRET"
+base_url: "https://openapi.tuyaus.com"
+token_refresh: 110  # Recommended default
+
+# Optional extras for your own reference
+username: "you@example.com"
+password: "YOUR_PASSWORD"
+user_id: "YOUR_USER_ID"
+project_code: "YOUR_PROJECT_CODE"
+```
+
+---
+
 ## 📌 Top-Level Structure
 
 Each YAML file defines **one or more entities for a single Tuya device**.
