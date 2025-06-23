@@ -303,3 +303,23 @@ Duplicate tuya_device_id = setup error → logged clearly.
 ## ✅ Everything clear, flexible & future-proof!
 
 Keep YAML clean, reload safely — **and take full control of Tuya Cloud in HA!** 🚀
+
+
+Excample of binary_sensor
+- binary_sensor:
+    code: motion_state      # ✅ The Tuya DP code for this boolean state
+    type: boolean           # ✅ Always "boolean" for binary sensors
+    device_class: motion    # ✅ (optional) HA device_class: motion, moisture, door, window, etc.
+    entity_category: diagnostic  # ✅ (optional) "config" or "diagnostic"
+    translated:
+      0: "Clear"
+      1: "Motion Detected"
+    enabled: true           # ✅ Must be true to include
+    | Field             | Required | What it does                                                                                                          |
+| ----------------- | -------- | ---------- |
+| `code` | ✅ | The Tuya DP key for this binary value (must be boolean or interpreted as boolean). |
+| `type` | ✅ | Always `"boolean"` — used by your helper to parse the DP safely. |
+| `device_class` | optional | Helps HA render icons & behavior correctly: `motion`, `moisture`, `opening`, `door`, `window`, `safety`, `smoke` etc. |
+| `entity_category` | optional | `"config"` or `"diagnostic"` — optional for sorting in HA UI. |
+| `translated` | optional | Map raw DP values (`0` / `1` or `true` / `false`) to friendly text for logs or debugging. |
+| `enabled` | ✅ | Must be `true` to load it! |

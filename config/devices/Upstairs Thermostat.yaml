@@ -61,7 +61,7 @@
     code: valve_state
     dp: '36'
     type: enum
-    translated:  # Optional: Translated values for the enum
+    translated:
       open: 'Heating'
       close: 'Off'
     enabled: true
