@@ -49,62 +49,78 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 # ------------------------------------------------------------------------------
 # ✅ Setup from Config Entry
 # ------------------------------------------------------------------------------
+# ✅ Setup from Config Entry
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Setup Tuya Cloud Custom from UI Config Entry."""
 
-    # 1️⃣ Validate secrets.yaml safely
+    # 1️⃣ Initialize main data store early
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN]["devices"] = []   # placeholder until we validate
+    hass.data[DOMAIN]["entities"] = {}  # central registry for all entities
+    hass.data[DOMAIN]["status"] = None  # will set below
+    hass.data[DOMAIN]["token_file"] = TOKEN_FILE
+    hass.data[DOMAIN]["secrets_file"] = SECRETS_FILE
+
+    # 2️⃣ Validate secrets.yaml safely
     secrets = await hass.async_add_executor_job(_check_secrets)
     if secrets is None:
         return False
+    hass.data[DOMAIN]["secrets"] = secrets
 
-    # 2️⃣ Load all device YAMLs safely
+    # 3️⃣ Load all device YAMLs safely
     devices = await hass.async_add_executor_job(load_tuya_devices, DEVICES_DIR)
 
     if not devices:
         _LOGGER.warning("[%s] ⚠️ No valid devices found in %s — nothing to set up.", DOMAIN, DEVICES_DIR)
         return False
 
-    # 3️⃣ Store runtime data
-    hass.data[DOMAIN] = {
-        "secrets": secrets,
-        "devices": devices,
-        "entities": {},  # maps (device_id, dp_code) to entity objects
-        "status": None,  # will be set below
-        "token_file": TOKEN_FILE,
-        "secrets_file": SECRETS_FILE,
-    }
+    # 4️⃣ NEW: Enforce no duplicate tuya_device_id
+    seen_tuya_ids = set()
+    for device in devices:
+        tuya_id = device.get("tuya_device_id")
+        if not tuya_id:
+            _LOGGER.error("[%s] ❌ Device block missing 'tuya_device_id'!", DOMAIN)
+            return False  # hard stop
+        if tuya_id in seen_tuya_ids:
+            _LOGGER.error("[%s] ❌ Duplicate tuya_device_id detected: '%s'. "
+                           "Each device must have a unique ID. Fix your YAML!", DOMAIN, tuya_id)
+            return False  # hard stop
+        seen_tuya_ids.add(tuya_id)
 
-    # 4️⃣ Refresh token immediately (in executor)
+    # 5️⃣ Store validated devices
+    hass.data[DOMAIN]["devices"] = devices
+
+    # 6️⃣ Refresh token immediately (in executor)
     await hass.async_add_executor_job(refresh_token, SECRETS_FILE, TOKEN_FILE)
 
-    # 5️⃣ Schedule periodic token refresh & force status update
+    # 7️⃣ Schedule periodic token refresh + force status update
     interval = int(secrets.get("token_refresh", 110)) * 60  # min → sec
 
     async def _refresh_loop(_):
         await hass.async_add_executor_job(refresh_token, SECRETS_FILE, TOKEN_FILE)
 
-        if DOMAIN in hass.data and "status" in hass.data[DOMAIN]:
-            status = hass.data[DOMAIN]["status"]
+        status = hass.data[DOMAIN].get("status")
+        if status:
             await status.async_fetch_all_devices()
 
         async_call_later(hass, interval, _refresh_loop)
 
     async_call_later(hass, interval, _refresh_loop)
 
-    # 6️⃣ Forward platforms
+    # 8️⃣ Forward platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # 7️⃣ After all platforms done: start Status safely
+    # 9️⃣ Start Status after all platforms have registered
     async def _start_status(_):
         status = Status(hass)
         hass.data[DOMAIN]["status"] = status
         await status.async_start_polling()
 
-    # Let the loop finish, then start Status
     async_call_later(hass, 1, _start_status)
 
     _LOGGER.info("[%s] ✅ Tuya Cloud Custom setup complete!", DOMAIN)
     return True
+
 
 # ------------------------------------------------------------------------------
 # ✅ Unload cleanly

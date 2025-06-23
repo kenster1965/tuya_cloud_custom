@@ -65,23 +65,21 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 ## ✅ 1️⃣ Device Block
 | Field | Required | Description |
 |-------|----------|-----------------------------|
-| `friendly_name` | ✅ | Your custom name for HA's Device tab. |
+| `friendly_name` | ✅ | Human-friendly display name for HA's Device page. |
 | `enabled` | ✅ | Enable or disable the device in HA. Keeps from getting added. |
-| `tuya_device_id` | ✅ | Your Tuya Cloud device ID. |
-| `tuya_category` | ✅ | Tuya device type (e.g., `wk`, `znrb`). Used as the HA "model". |
+| `tuya_device_id` | ✅ | Your Tuya Cloud device ID. This guarantees a unique stable backend ID and pins your entity IDs. |
+| `tuya_product_id` | optional | Tuya Product ID. Used to build the HA model info. |
+| `tuya_category` | optional | Tuya device type (e.g., `wk`, `znrb`). Used as the HA "model". |
 | `local_ip` | optional | Reference only, not used. |
 | `local_key` | optional |  Reference only, not used.  |
 | `poll_interval` | optional | How often to poll status (seconds). Defaults to 60. |
 | `version` | optional | Version info for your own tracking. |
 
+💡 **Important:** Your tuya_device_id must be unique across all files — the loader checks for duplicates and fails setup if found.
+
 ---
 
 ## ✅ 2️⃣ Entity Blocks (Sensor, Switch, Number, -adding more soon-)
-Legend:
-Se = Sensor
-Sw = Switch
-Nu = Number
-
 | Field | Used in | Required | Description |
 |-------|---------|----------|-----------------------------|
 | `enabled` | All | ✅ | Enable or disable this entity. |
@@ -90,20 +88,19 @@ Nu = Number
 | `type` | All | ✅ | Type of DP: boolean, integer, float, enum, |
 | `category` | All | optional | HA `entity_category`: `config` or `diagnostic`. |
 | `class` | All | optional | HA `device_class` (e.g. `temperature`, `battery`). |
-| `unit_of_measurement` | Se, Nu | optional | Example: `%`, `°C`. |
-| `translated` | Se | optional | Map raw DP → friendly labels. |
-| `min_value`| Nu | ✅ | Minimum value |
-| `max_value`| Nu | ✅ | Maximum value |
-| `step_size`| Nu | ✅ | Increment |
+| `unit_of_measurement` | Sensor, NNumberu | optional | Example: `%`, `°C`. |
+| `translated` | Sensor | optional | Map raw DP → friendly labels. |
+| `min_value`| Number | ✅ | Minimum value |
+| `max_value`| Number | ✅ | Maximum value |
+| `step_size`| Number | ✅ | Increment |
 
 
 ## ✅ 3️⃣ Climate Block — Flexible & Robust
-
 ✅ Climate Block
 Defines a thermostat entity.
 | Field                 | Required | Description |
 | --------------------- | -------- | --------------------------------- |
-| `unique_id`           | ✅ | Unique Home Assistant ID |
+| `unique_id`           | ✅ | Globally unique ID for the thermostat. This pins both the backend ID and the UI display name. |
 | `enabled`             | ✅ | Enable/disable this entity |
 | `temp_convert`        | optional | Auto-convert raw temps: `"c_to_f"` or `"f_to_c"` |
 | `current_temperature` | ✅ | DP info for current temp |
@@ -137,8 +134,6 @@ Defines a thermostat entity.
 | `dp`    | optional | DP ID, for reference only |
 | `type`  | ✅ | `enum` |
 | `modes` | ✅ | Map of `HA_mode: Tuya_mode` (e.g. `heat: manual`) |
-
-
 
 
 Example with temperature conversion, switch, mode mapping:
@@ -205,43 +200,30 @@ Map raw states to friendly labels — works for `enum`, `bitfield`, or `integer`
 
 ---
 
-## ✅ 5️⃣ Key Valid Values
+## ✅ 5️⃣ How IDs Work
+| What                          | How it’s built                                                               |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| **Device Registry ID**        | always `tuya_device_id`                                                      |
+| **Device display name in UI** | `friendly_name`                                                              |
+| **Entity ID pattern**         | `<platform>.<slug(friendly_name)>_<slug(code)>` (for sensor, switch, number) |
+| **Climate Entity ID**         | `<platform>.<slug(friendly_name)>_<slug(unique_id)>`                         |
 
-### `category` (Entity Category)
-
-| Value | Meaning |
-|-------|---------|
-| `config` | Control or configuration entity (shows in Controls of UI). |
-| `diagnostic` | Diagnostic info only (shows in Diagnostics of UI). |
-
-### `class` (Device Class)
-
-| Common examples |
-|-----------------|
-| `temperature` |
-| `humidity` |
-| `battery` |
-| `voltage` |
-| `current` |
-| `power` |
-| `pressure` |
-| `energy` |
-
-For `sensor` use, see Home Assistant’s `VALID_SENSOR_CLASSES`.
+✅ This means:
+The tuya_device_id pins your backend & avoids collisions.
+The friendly_name gives a pretty display — it does not affect the ID stability.
+Duplicate tuya_device_id = setup error → logged clearly.
 
 ---
 
 ## ✅ 6️⃣ Best Practices
-
-✅ Keep `tuya_category` only in the `device` block.
-✅ Use `category` and `class` in entities only if you want HA to sort them nicely.
-✅ Use `translated` for cleaner UI labels.
-✅ For `climate` → keep `modes` map clear and match real Tuya values.
+✅ One YAML per real Tuya device — do not duplicate tuya_device_id.
+✅ Use friendly_name for UI clarity — safe to rename in HA if needed.
+✅ Keep code unique per entity.
+✅ Use translated for friendly states.
 
 ---
 
 ## ✅ 7️⃣ Full Example YAML
-
 ```yaml
 - device:
     friendly_name: Pool Heater
@@ -296,6 +278,25 @@ For `sensor` use, see Home Assistant’s `VALID_SENSOR_CLASSES`.
     unit_of_measurement: '%'
     enabled: true
 ```
+
+### Info:
+## `category` (Entity Category)
+| Value | Meaning |
+|-------|---------|
+| `config` | Control or configuration entity (shows in Controls of UI). |
+| `diagnostic` | Diagnostic info only (shows in Diagnostics of UI). |
+
+## `class` (Device Class)
+| Common examples |
+|-----------------|
+| `temperature` |
+| `humidity` |
+| `battery` |
+| `voltage` |
+| `current` |
+| `power` |
+| `pressure` |
+| `energy` |
 
 ---
 

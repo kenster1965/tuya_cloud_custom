@@ -29,15 +29,13 @@ class TuyaCloudSensor(SensorEntity):
         self._state = None
 
         attrs = build_entity_attrs(device, dp, "sensor")
-        self._attr_unique_id = attrs["unique_id"]
-        self._attr_has_entity_name = False
 
-        if "name" in attrs:
-            self._attr_name = attrs["name"]
+        self._attr_has_entity_name = True
+        self._attr_name = attrs["name"]
+        self._attr_unique_id = attrs["unique_id"]
 
         self._attr_device_class = attrs.get("device_class")
         self._attr_entity_category = attrs.get("entity_category")
-
         self._attr_native_unit_of_measurement = attrs.get("native_unit_of_measurement")
 
         # ✅ Type and translate map

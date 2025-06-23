@@ -6,7 +6,7 @@ from homeassistant.components.climate.const import HVACMode, ClimateEntityFeatur
 from homeassistant.const import UnitOfTemperature
 
 from .const import DOMAIN
-from .helpers.helper import build_device_info
+from .helpers.helper import build_entity_attrs, build_device_info
 from .helpers.tuya_command import send_tuya_command
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,8 +31,11 @@ class TuyaCloudClimate(ClimateEntity):
         self._device = device
         self._dp = dp
 
-        self._attr_unique_id = dp.get("unique_id")
-        self._attr_has_entity_name = False
+        attrs = build_entity_attrs(device, dp, "climate")
+
+        self._attr_has_entity_name = True
+        self._attr_name = attrs["name"]
+        self._attr_unique_id = attrs["unique_id"]
 
         # 🌡️ Temperature props
         self._temp_convert = dp.get("temp_convert")  # e.g. c_to_f or None

@@ -2,6 +2,7 @@
 Tuya Cloud Custom - Device Loader
 
 Loads all YAML files in config/devices/ and validates required structure.
+Confirms each device has a unique `tuya_device_id` and at least one entity.
 Supports multi-DP platforms like climate, plus switch, sensor, number.
 """
 
@@ -17,6 +18,7 @@ def load_tuya_devices(devices_dir: str) -> list:
     """Load all device YAMLs in the given directory."""
 
     devices = []
+    seen_tuya_ids = set()  # ✅ new: track unique IDs
 
     if not os.path.isdir(devices_dir):
         _LOGGER.error("[%s] ❌ Devices directory does not exist: %s", DOMAIN, devices_dir)
@@ -48,12 +50,11 @@ def load_tuya_devices(devices_dir: str) -> list:
                 device_conf = block["device"]
             elif "climate" in block:
                 dp = block["climate"]
-                # ✅ New required top-level keys
+                # ✅ Same climate checks
                 required_keys = ["current_temperature", "target_temperature", "hvac_mode"]
                 missing = [k for k in required_keys if k not in dp]
                 valid = True
 
-                # Also ensure sub-keys exist:
                 if "current_temperature" in dp and "code" not in dp["current_temperature"]:
                     missing.append("current_temperature.code")
                     valid = False
@@ -94,6 +95,19 @@ def load_tuya_devices(devices_dir: str) -> list:
             _LOGGER.warning("[%s] ⚠️ No valid entities found in %s — skipping.", DOMAIN, file_name)
             continue
 
+        # ✅ NEW: Check for duplicate tuya_device_id
+        tuya_id = device_conf.get("tuya_device_id")
+        if not tuya_id:
+            _LOGGER.error("[%s] ❌ File %s missing 'tuya_device_id' in device block!", DOMAIN, file_name)
+            continue
+
+        if tuya_id in seen_tuya_ids:
+            _LOGGER.error("[%s] ❌ Duplicate tuya_device_id detected: '%s' in %s. "
+                           "Each device must have a unique tuya_device_id! "
+                           "Check your YAML files for duplicates.", DOMAIN, tuya_id, file_name)
+            continue  # or `raise` if you prefer hard-fail
+        seen_tuya_ids.add(tuya_id)
+
         # ✅ Compose device entry
         device_conf.setdefault("enabled", True)
         device_conf.setdefault("poll_interval", 60)
@@ -101,6 +115,6 @@ def load_tuya_devices(devices_dir: str) -> list:
 
         devices.append(device_conf)
         _LOGGER.info("[%s] ✅ Loaded %s with %s entities from %s",
-                     DOMAIN, device_conf.get("tuya_device_id"), len(entities), file_name)
+                     DOMAIN, tuya_id, len(entities), file_name)
 
     return devices

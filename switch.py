@@ -32,11 +32,10 @@ class TuyaCloudSwitch(SwitchEntity):
         self._state = False
 
         attrs = build_entity_attrs(device, dp, "switch")
-        self._attr_unique_id = attrs["unique_id"]
-        self._attr_has_entity_name = False
 
-        if "name" in attrs:
-            self._attr_name = attrs["name"]
+        self._attr_has_entity_name = True
+        self._attr_name = attrs["name"]
+        self._attr_unique_id = attrs["unique_id"]
 
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
