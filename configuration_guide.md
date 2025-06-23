@@ -43,6 +43,8 @@ user_id: "YOUR_USER_ID"
 project_code: "YOUR_PROJECT_CODE"
 ```
 
+> 💡 **Pro Tip:** Store your `secrets.yaml` outside version control to stay secure. Keep it private.
+
 ---
 
 ## 📌 Top-Level Structure
