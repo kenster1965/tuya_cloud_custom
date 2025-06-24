@@ -9,7 +9,7 @@
 !*.js*
 
 # Ignored folders!!
-config/devices
+#config/devices
 
 # I want these files ignored!!
 secrets.yaml

@@ -1,6 +1,6 @@
 - device:
-    friendly_name: Thermostat Upstairs
-    tuya_device_id: ebbc33438cf6370a5fw9mg
+    friendly_name: thermostat basement
+    tuya_device_id: eb1e7213ed555309144f4u
     tuya_product_id: cktlr24gpl2h2d0b
     tuya_category: wk
     poll_interval: 60
@@ -8,7 +8,7 @@
     enabled: true
 
 - climate:
-    unique_id: upstairs_thermostat
+    unique_id: basement_thermostat
     enabled: true
     temp_convert: "c_to_f"
     current_temperature:

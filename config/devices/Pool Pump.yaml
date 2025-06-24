@@ -1,0 +1,23 @@
+- device:
+    friendly_name: Pool Pump
+    tuya_device_id: ebeda6045c6efa0743ckr5
+    tuya_product_id: ylymu5v6xscoveek
+    tuya_category: cz    
+    poll_interval: 300
+    version: 1
+    enabled: true
+    
+- switch:
+    code: switch_1
+    name: Power
+    dp: '1'
+    type: boolean
+    restore_on_reconnect: true
+    enabled: true
+
+- binary_sensor:
+    code: relay_status
+    dp: '38'
+    type: enum
+    on_value: 'power_on'
+    enabled: true
