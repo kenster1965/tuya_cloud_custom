@@ -238,6 +238,7 @@ Sends raw:  "low", "medium", "high" to Tuya.
 ## ✅ 4️⃣ Translated Example
 
 Map raw states to friendly labels — works for `enum`, `bitfield`, or `integer` values.
+Note: at times keys like 0, 1, .. are not integers but are treated as strings so the key would then have to be in 'quotes'.
 
 ```yaml
 - sensor:
@@ -252,10 +253,10 @@ Map raw states to friendly labels — works for `enum`, `bitfield`, or `integer`
 - sensor:
     code: fault
     id: '15'
-    type: bitfield
+    type: enum
     translated:
-      0: 'OK'
-      1: 'Water Off!'
+      '0': 'OK'
+      '1': 'Water Off!'
     category: diagnostic
     enabled: true
 ```
