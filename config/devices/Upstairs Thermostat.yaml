@@ -65,7 +65,7 @@
     type: enum
     on_value: 'open'
     enabled: true
-
+    
 - sensor:
     code: battery_percentage
     dp: '35'
@@ -74,24 +74,42 @@
     device_class: battery
     unit_of_measurement: '%'
     enabled: true
-    
+
 - switch:
     code: eco
     dp: '4'
     type: boolean
     entity_category: config
     enabled: true
-    
+
 - switch:
     code: frost
     dp: '10'
     type: boolean
     entity_category: config
     enabled: true
-    
+
 - sensor:
     code: fault
-    # dp: 
+    # dp:
     type: enum
     entity_category: diagnostic
+    enabled: true
+
+- switch:
+    code: sound
+    dp: '7'
+    type: boolean
+    entity_category: config
+    enabled: true
+    
+- select:
+    code: sensor_choose
+    name: Sensor Location
+    dp: '43'
+    type: enum
+    entity_category: config
+    options:
+        in: Internal
+        out: External
     enabled: true

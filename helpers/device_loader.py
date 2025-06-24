@@ -84,6 +84,15 @@ def load_tuya_devices(devices_dir: str) -> list:
                 dp = block["number"]
                 dp["platform"] = "number"
                 entities.append(dp)
+            elif "binary_sensor" in block:
+                dp = block["binary_sensor"]
+                dp["platform"] = "binary_sensor"
+                entities.append(dp)
+            elif "select" in block:
+                dp = block["select"]
+                dp["platform"] = "select"
+                entities.append(dp)
+
             else:
                 _LOGGER.warning("[%s] ⚠️ Unknown block in %s: %s", DOMAIN, file_name, block)
 

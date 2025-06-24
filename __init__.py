@@ -37,7 +37,7 @@ SECRETS_FILE = os.path.join(CONFIG_PATH, "secrets.yaml")
 # ------------------------------------------------------------------------------
 # Platforms to register
 # ------------------------------------------------------------------------------
-PLATFORMS = ["switch", "sensor", "number", "climate", "binary_sensor"]
+PLATFORMS = ["switch", "sensor", "number", "climate", "binary_sensor", "select"]
 
 # ------------------------------------------------------------------------------
 # ✅ Legacy YAML fallback (optional)

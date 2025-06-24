@@ -2,7 +2,7 @@
     friendly_name: Pool Heatpump
     tuya_device_id: eb27838708a77766e8gkx9
     tuya_product_id: edcxde1oraigz7tw
-    tuya_category: znrb    
+    tuya_category: znrb
     local_ip: 192.168.68.174
     local_key: JdwX4n6)EYH|<|2I
     poll_interval: 60
@@ -12,7 +12,7 @@
 - climate:
     unique_id: pool_thermostat
     enabled: true
-    temp_convert: "c_to_f"
+    scale: 1   # means raw = real degrees, no tenths
     current_temperature:
       code: temp_current_f
       dp: '35'
@@ -33,10 +33,10 @@
       dp: '5'
       type: enum
       modes:
-        heat: 1
-        cool: 0
+        heat: '1'
+        cool: '0'
 
-- sensor
+- sensor:
     code: work_state
     dp: '17'
     enabled: true
@@ -74,7 +74,7 @@
     device_class: temperature
     unit_of_measurement: '°F'
     enabled: true
-    
+
 - sensor:
     code: V7
     name: "Suction Temperature"
@@ -82,8 +82,8 @@
     type: integer
     device_class: temperature
     unit_of_measurement: '°F'
-    enabled: true   
-    
+    enabled: true
+
 - sensor:
     code: V8
     name: "Exhaust Temperature"
@@ -92,7 +92,7 @@
     device_class: temperature
     unit_of_measurement: '°F'
     enabled: true
-    
+
 - sensor:
     code: V10
     name: "Outlet Temperature"
@@ -101,12 +101,12 @@
     device_class: temperature
     unit_of_measurement: '°F'
     enabled: true
-    
+
 - sensor:
     code: fault
     dp: '15'
     type: bitfield
-    translated:  # Optional: Translated values for the enum
+    translated:
       0: 'No Fault'
       1: 'Water Flow!'
     entity_category: diagnostic

@@ -79,7 +79,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 
 ---
 
-## ✅ 2️⃣ Entity Blocks (Sensor, Switch, Number, Binary, -adding more soon-)
+## ✅ 2️⃣ Entity Blocks (Sensor, Switch, Number, Binary, Select, -adding more soon-)
 | Field | Used in | Required | Description |
 |-------|---------|----------|-----------------------------|
 | `enabled` | All | ✅ | Enable or disable this entity. |
@@ -94,6 +94,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `max_value`| Number | ✅ | Maximum value |
 | `step_size`| Number | ✅ | Increment |
 | `on_value` | Binary | ✅ | What value means ON, Ie true, 1, 'motion', ... |
+| `options` | Select | ✅ | Map of key: label pairs. Key = sent to Tuya; label = shown in HA. |
 
 
 ## ✅ 3️⃣ Climate Block — Flexible & Robust
@@ -103,7 +104,8 @@ Defines a thermostat entity.
 | --------------------- | -------- | --------------------------------- |
 | `unique_id`           | ✅ | Globally unique ID for the thermostat. This pins both the backend ID and the UI display name. |
 | `enabled`             | ✅ | Enable/disable this entity |
-| `temp_convert`        | optional | Auto-convert raw temps: `"c_to_f"` or `"f_to_c"` |
+| `temp_convert`        | optional | Auto-convert raw temps: `"c_to_f"` or `"f_to_c"` or leave empty for no conversion. |
+| `scale`	              | optional | Scale factor for raw DP. Use 10 for tenths (default) or 1 for whole degrees. |
 | `current_temperature` | ✅ | DP info for current temp |
 | `target_temperature`  | optional | DP info for setpoint; omit to disable |
 | `on_off`              | optional | DP info for a switch to turn the climate OFF, if not part of `mode`|
@@ -136,6 +138,12 @@ Defines a thermostat entity.
 | `type`  | ✅ | `enum` |
 | `modes` | ✅ | Map of `HA_mode: Tuya_mode` (e.g. `heat: manual`) |
 
+`scale` field explained:
+| Value | When to use |
+| -------------- |  ------------ |
+| `10` (default) | If your DP reports temperature in tenths of a degree (common for thermostats). Example: raw `820` = `82.0°F`. |
+| `1` | If your DP reports whole degrees directly (common for pool heat pumps or simple thermostats). Example: raw `82` = `82°F`. |
+
 
 Example with temperature conversion, switch, mode mapping:
 
@@ -144,6 +152,7 @@ Example with temperature conversion, switch, mode mapping:
     unique_id: upstairs_thermostat
     enabled: true
     temp_convert: "c_to_f"
+    scale: 10   # raw is tenths of °C / or omomit this line
     current_temperature:
       code: temp_current
       dp: '24'
@@ -166,7 +175,59 @@ Example with temperature conversion, switch, mode mapping:
       modes:
         heat: 'manual'
         # heat_cool: 'auto'  # Omiting so HA does not list it as a Mode
+
+- climate:
+    unique_id: pool_thermostat
+    enabled: true
+    scale: 1   # DP is whole degrees!
+    current_temperature:
+      code: temp_current_f
+      dp: '35'
+      type: integer
+    target_temperature:
+      code: set_temp59_104
+      dp: '196'
+      type: integer
+      min_temp: 59
+      max_temp: 104
+      precision: 1
+    on_off:
+      code: switch
+      dp: '1'
+      type: boolean
+    hvac_mode:
+      code: work_mode
+      dp: '5'
+      type: enum
+      modes:
+        heat: '1'
+        cool: '0'
+
 ```
+
+Example of `select` block
+```yaml
+- select:
+    code: sensor_mode
+    type: enum
+    options:
+      in: Internal
+      out: External
+    enabled: true
+
+- select:
+    code: fan_speed
+    type: enum
+    options:
+      low: Low
+      medium: Medium
+      high: High
+    enabled: true
+```
+HA shows:  Low | Medium | High
+Sends raw:  "low", "medium", "high" to Tuya.
+
+---
 
 ✅ `temp_convert` handles raw C → HA F.
 ✅ `on_off` switch overrides mode to `OFF`.
