@@ -1,16 +1,14 @@
 - device:
-    friendly_name: Thermostat Upstairs
-    tuya_device_id: ebbc33438cf6370a5fw9mg
+    friendly_name: Thermostat Front Room
+    tuya_device_id: eb09a2653547c5ea61rix6
     tuya_product_id: cktlr24gpl2h2d0b
     tuya_category: wk
-    local_ip: 192.168.68.189
-    local_key: #mFM/Z;L.eI#P()r
     poll_interval: 60
     version: 1
     enabled: true
 
 - climate:
-    unique_id: upstairs_thermostat
+    unique_id: front_room_thermostat
     enabled: true
     temp_convert: "c_to_f"
     current_temperature:

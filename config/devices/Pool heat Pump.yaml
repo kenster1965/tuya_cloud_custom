@@ -3,6 +3,8 @@
     tuya_device_id: eb27838708a77766e8gkx9
     tuya_product_id: edcxde1oraigz7tw
     tuya_category: znrb
+    local_ip: 192.168.68.174
+    local_key: JdwX4n6)EYH|<|2I
     poll_interval: 60
     version: 1
     enabled: true
