@@ -1,0 +1,113 @@
+- device:
+    friendly_name: thermostat basement
+    tuya_device_id: eb1e7213ed555309144f4u
+    tuya_product_id: cktlr24gpl2h2d0b
+    tuya_category: wk
+    poll_interval: 60
+    version: 1
+    enabled: true
+
+- climate:
+    unique_id: basement_thermostat
+    enabled: true
+    temp_convert: "c_to_f"
+    current_temperature:
+      code: temp_current
+      dp: '24'
+      type: integer
+    target_temperature:
+      code: temp_set
+      dp: '16'
+      type: integer
+      min_temp: 40
+      max_temp: 90
+      precision: 1
+    on_off:
+      code: switch
+      dp: '1'
+      type: boolean
+    hvac_mode:
+      code: mode
+      dp: '2'
+      type: enum
+      modes:
+        heat: 'manual'
+        # heat_cool: 'auto'
+
+- switch:
+    code: child_lock
+    dp: '40'
+    type: boolean
+    restore_on_reconnect: false
+    is_passive_entity: false
+    entity_category: config
+    enabled: true
+
+- number:
+    code: backlight
+    dp: '44'
+    type: integer
+    min_value: 0
+    max_value: 100
+    step_size: 1
+    unit_of_measurement: '%'
+    restore_on_reconnect: false
+    is_passive_entity: false
+    entity_category: config
+    enabled: true
+
+- binary_sensor:
+    code: valve_state
+    name: Heating
+    dp: '36'
+    type: enum
+    on_value: 'open'
+    enabled: true
+    
+- sensor:
+    code: battery_percentage
+    dp: '35'
+    type: integer
+    entity_category: diagnostic
+    device_class: battery
+    unit_of_measurement: '%'
+    enabled: true
+
+- switch:
+    code: eco
+    dp: '4'
+    type: boolean
+    entity_category: config
+    enabled: true
+
+- switch:
+    code: frost
+    dp: '10'
+    type: boolean
+    entity_category: config
+    enabled: true
+
+- sensor:
+    code: fault
+    # dp:
+    type: enum
+    entity_category: diagnostic
+    enabled: true
+
+- switch:
+    code: sound
+    dp: '7'
+    type: boolean
+    entity_category: config
+    enabled: true
+    
+- select:
+    code: sensor_choose
+    name: Sensor Location
+    dp: '43'
+    type: enum
+    entity_category: config
+    options:
+        in: Internal
+        out: External
+    enabled: true
