@@ -3,8 +3,6 @@
     tuya_device_id: ebbc33438cf6370a5fw9mg
     tuya_product_id: cktlr24gpl2h2d0b
     tuya_category: wk
-    local_ip: 192.168.68.189
-    local_key: #mFM/Z;L.eI#P()r
     poll_interval: 60
     version: 1
     enabled: true
