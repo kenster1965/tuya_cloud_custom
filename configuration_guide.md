@@ -79,7 +79,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 
 ---
 
-## ✅ 2️⃣ Entity Blocks (Sensor, Switch, Number, -adding more soon-)
+## ✅ 2️⃣ Entity Blocks (Sensor, Switch, Number, Binary, -adding more soon-)
 | Field | Used in | Required | Description |
 |-------|---------|----------|-----------------------------|
 | `enabled` | All | ✅ | Enable or disable this entity. |
@@ -93,6 +93,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `min_value`| Number | ✅ | Minimum value |
 | `max_value`| Number | ✅ | Maximum value |
 | `step_size`| Number | ✅ | Increment |
+| `on_value` | Binary | ✅ | What value means ON, Ie true, 1, 'motion', ... |
 
 
 ## ✅ 3️⃣ Climate Block — Flexible & Robust
