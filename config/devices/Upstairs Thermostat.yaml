@@ -38,7 +38,6 @@
     code: child_lock
     dp: '40'
     type: boolean
-    restore_on_reconnect: false
     entity_category: config
     enabled: true
 
@@ -50,9 +49,7 @@
     max_value: 100
     step_size: 1
     unit_of_measurement: '%'
-    restore_on_reconnect: false
     entity_category: config
-    restore_on_reconnect: true
     enabled: true
 
 - binary_sensor:
@@ -98,7 +95,6 @@
     dp: '7'
     type: boolean
     entity_category: config
-    restore_on_reconnect: true
     enabled: true
 
 - select:
