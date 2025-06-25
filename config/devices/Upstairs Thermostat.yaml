@@ -63,7 +63,7 @@
     type: enum
     on_value: 'open'
     enabled: true
-    
+
 - sensor:
     code: battery_percentage
     dp: '35'
@@ -98,9 +98,10 @@
     code: sound
     dp: '7'
     type: boolean
+    is_passive_entity: true
     entity_category: config
     enabled: true
-    
+
 - select:
     code: sensor_choose
     name: Sensor Location

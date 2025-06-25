@@ -1,7 +1,7 @@
 {
     "domain": "tuya_cloud_custom",
     "name": "Tuya Cloud Custom",
-    "version": "2025.06.25",
+    "version": "2025.06.24B",
     "documentation": "https://github.com/kenster1965/tuya_cloud_custom",
     "dependencies": [],
     "codeowners": ["@kenster1965"],
