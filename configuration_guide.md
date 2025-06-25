@@ -96,6 +96,21 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `on_value` | Binary | ✅ | What value means ON, Ie true, 1, 'motion', ... |
 | `options` | Select | ✅ | Map of key: label pairs. Key = sent to Tuya; label = shown in HA. |
 | `is_passive_entity` | All except sensors | optional | Prevents sending commands to Tuya (HA display only). Default: false. |
+| `restore_on_reconnect` | Switch, Number	| optional |	When true, Home Assistant will re-send the last known state (if HA previously set it) after a reconnect or restart. Skipped for passive entities. Defaults to false. |
+
+### Note for restore_on_reconnect
+- Does not restore state if is_passive_entity: true.
+- Only restores values that HA explicitly sent before (not values received from Tuya or defaults).
+- Helps keep device state consistent across reboots, power cycles, or network reconnects.
+Sample:
+```yaml
+- switch:
+    code: pump
+    type: boolean
+    enabled: true
+    restore_on_reconnect: true
+```
+- This will automatically turn the pump back ON at HA startup if HA turned it on before and the device is reachable.
 
 
 ## 3️⃣ Climate Block — Flexible & Robust

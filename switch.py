@@ -2,6 +2,8 @@
 
 import logging
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.helpers.restore_state import RestoreEntity
+
 from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
 from .helpers.tuya_command import send_tuya_command
@@ -21,7 +23,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("[%s] ✅ Registered %s switches", DOMAIN, len(switches))
 
 
-class TuyaCloudSwitch(SwitchEntity):
+class TuyaCloudSwitch(SwitchEntity, RestoreEntity):
     """Representation of a Tuya Cloud Custom Switch."""
 
     def __init__(self, hass, device, dp):
@@ -30,6 +32,8 @@ class TuyaCloudSwitch(SwitchEntity):
         self._dp = dp
 
         self._state = False
+        self._last_ha_command = None
+        self._restored_once = False
 
         attrs = build_entity_attrs(device, dp, "switch")
 
@@ -37,15 +41,17 @@ class TuyaCloudSwitch(SwitchEntity):
         self._attr_name = attrs["name"]
         self._attr_unique_id = attrs["unique_id"]
 
+        self._dp_type = dp.get("type", "boolean")
+        self._is_passive = dp.get("is_passive_entity", False)
+        self._restore_on_reconnect = dp.get("restore_on_reconnect", False)
+
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
 
-        self._dp_type = dp.get("type", "boolean")
-        self._is_passive = dp.get("is_passive_entity", False)
-
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
-        _LOGGER.debug("[%s] ✅ Registered switch entity: %s | Passive: %s", DOMAIN, key, self._is_passive)
+        _LOGGER.debug("[%s] ✅ Registered switch entity: %s | Passive: %s | Restore: %s",
+                      DOMAIN, key, self._is_passive, self._restore_on_reconnect)
 
     @property
     def is_on(self):
@@ -90,10 +96,22 @@ class TuyaCloudSwitch(SwitchEntity):
 
             if response and response.status_code == 200:
                 self._state = bool(state)
+                self._last_ha_command = self._state
                 self.async_write_ha_state()
 
         except Exception as e:
             _LOGGER.warning("[%s] ❌ Switch command failed for %s: %s", DOMAIN, self._attr_unique_id, e)
+
+    async def async_added_to_hass(self):
+        """Handle entity addition and optional state restore."""
+        if self._restore_on_reconnect and not self._is_passive and not self._restored_once:
+            last_state = await self.async_get_last_state()
+            if last_state and last_state.state in ("on", "off"):
+                restored_state = last_state.state == "on"
+                _LOGGER.info("[%s] 🔁 Restoring '%s' to %s (restore_on_reconnect)",
+                             DOMAIN, self._attr_unique_id, restored_state)
+                await self._send_tuya_command(restored_state)
+                self._restored_once = True
 
     async def async_update(self):
         """No polling — status pushes updates."""
