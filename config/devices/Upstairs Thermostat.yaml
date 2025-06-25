@@ -52,6 +52,7 @@
     unit_of_measurement: '%'
     restore_on_reconnect: false
     entity_category: config
+    restore_on_reconnect: true
     enabled: true
 
 - binary_sensor:
@@ -97,6 +98,7 @@
     dp: '7'
     type: boolean
     entity_category: config
+    restore_on_reconnect: true
     enabled: true
 
 - select:

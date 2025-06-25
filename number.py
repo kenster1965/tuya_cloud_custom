@@ -30,7 +30,6 @@ class TuyaCloudNumber(NumberEntity):
         self._dp = dp
         self._state = None
 
-        # Standardized attributes
         attrs = build_entity_attrs(device, dp, "number")
 
         self._attr_has_entity_name = True
@@ -46,10 +45,14 @@ class TuyaCloudNumber(NumberEntity):
 
         self._dp_type = dp.get("type", "float")
         self._is_passive = dp.get("is_passive_entity", False)
+        self._restore_on_reconnect = dp.get("restore_on_reconnect", False)
+        self._last_sent_value = None
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
-        _LOGGER.debug("[%s] ✅ Registered number entity: %s | Passive=%s", DOMAIN, key, self._is_passive)
+
+        _LOGGER.debug("[%s] ✅ Registered number entity: %s | Passive=%s | Restore=%s",
+                      DOMAIN, key, self._is_passive, self._restore_on_reconnect)
 
     @property
     def native_value(self):
@@ -63,12 +66,13 @@ class TuyaCloudNumber(NumberEntity):
         """Send number value command with explicit DP type."""
 
         if self._is_passive:
-            _LOGGER.info("[%s] 🚫 Number %s is passive — command not sent", DOMAIN, self._attr_unique_id)
+            _LOGGER.info("[%s] 🚫 Passive number '%s' — ignoring command: %s",
+                         DOMAIN, self._attr_unique_id, value)
             self._state = value
             self.async_write_ha_state()
             return
 
-        # ✅ Cast safely before sending
+        # Type casting
         if self._dp_type == "integer":
             value_to_send = int(value)
         elif self._dp_type == "float":
@@ -83,23 +87,44 @@ class TuyaCloudNumber(NumberEntity):
             self._dp["code"],
             value_to_send
         )
+
         if response and response.status_code == 200:
             self._state = value_to_send
+            self._last_sent_value = value_to_send
             self.async_write_ha_state()
 
     async def async_update(self):
-        """No polling — status pushes updates."""
-        pass
+        """Restore last HA-set value if configured to do so."""
+        if self._restore_on_reconnect and not self._is_passive and self._last_sent_value is not None:
+            _LOGGER.info("[%s] ♻️ Restoring number '%s' to %s",
+                         DOMAIN, self._attr_unique_id, self._last_sent_value)
+
+            await self._hass.async_add_executor_job(
+                send_tuya_command,
+                self._hass,
+                self._device["tuya_device_id"],
+                self._dp["code"],
+                self._last_sent_value
+            )
+            self._state = self._last_sent_value
+            self.async_write_ha_state()
+        else:
+            _LOGGER.debug("[%s] 🔄 Skipping restore for '%s' — Passive=%s, Restore=%s, LastSent=%s",
+                          DOMAIN, self._attr_unique_id, self._is_passive,
+                          self._restore_on_reconnect, self._last_sent_value)
 
     async def async_update_from_status(self, val):
         """Update from status manager with type-safe parsing."""
         try:
             if self._dp_type == "integer":
-                self._state = int(val)
+                parsed = int(val)
             elif self._dp_type == "float":
-                self._state = float(val)
+                parsed = float(val)
             else:
-                self._state = val
+                parsed = val
+
+            self._state = parsed
+
         except (TypeError, ValueError):
             self._state = val
 
