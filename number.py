@@ -2,6 +2,8 @@
 
 import logging
 from homeassistant.components.number import NumberEntity
+from homeassistant.helpers.restore_state import RestoreEntity
+
 from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
 from .helpers.tuya_command import send_tuya_command
@@ -21,7 +23,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("[%s] ✅ Registered %s numbers", DOMAIN, len(numbers))
 
 
-class TuyaCloudNumber(NumberEntity):
+class TuyaCloudNumber(NumberEntity, RestoreEntity):
     """Representation of a Tuya Cloud Custom Number."""
 
     def __init__(self, hass, device, dp):
@@ -29,6 +31,8 @@ class TuyaCloudNumber(NumberEntity):
         self._device = device
         self._dp = dp
         self._state = None
+        self._last_sent_value = None
+        self._restored_once = False
 
         attrs = build_entity_attrs(device, dp, "number")
 
@@ -46,8 +50,6 @@ class TuyaCloudNumber(NumberEntity):
         self._dp_type = dp.get("type", "float")
         self._is_passive = dp.get("is_passive_entity", False)
         self._restore_on_reconnect = dp.get("restore_on_reconnect", False)
-        self._last_sent_value = None
-        self._restored_once = False
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
@@ -94,32 +96,46 @@ class TuyaCloudNumber(NumberEntity):
             self._last_sent_value = value_to_send
             self.async_write_ha_state()
 
-    async def async_update(self):
-        """Restore last HA-set value if configured to do so."""
+    async def async_added_to_hass(self):
+        """Restore value from previous HA state on reconnect, if configured."""
         if (
             self._restore_on_reconnect
             and not self._is_passive
-            and self._last_sent_value is not None
             and not self._restored_once
         ):
+            last_state = await self.async_get_last_state()
+            if last_state and last_state.state not in (None, "unknown", "unavailable"):
+                try:
+                    if self._dp_type == "integer":
+                        restored = int(last_state.state)
+                    elif self._dp_type == "float":
+                        restored = float(last_state.state)
+                    else:
+                        restored = last_state.state
 
-            _LOGGER.info("[%s] ♻️ Restoring number '%s' to %s",
-                         DOMAIN, self._attr_unique_id, self._last_sent_value)
+                    _LOGGER.info("[%s] ♻️ Restoring number '%s' to %s (restore_on_reconnect)",
+                                 DOMAIN, self._attr_unique_id, restored)
 
-            await self._hass.async_add_executor_job(
-                send_tuya_command,
-                self._hass,
-                self._device["tuya_device_id"],
-                self._dp["code"],
-                self._last_sent_value
-            )
-            self._state = self._last_sent_value
-            self._restored_once = True
-            self.async_write_ha_state()
-        else:
-            _LOGGER.debug("[%s] 🔄 Skipping restore for '%s' — Passive=%s, Restore=%s, LastSent=%s",
-                          DOMAIN, self._attr_unique_id, self._is_passive,
-                          self._restore_on_reconnect, self._last_sent_value)
+                    await self._hass.async_add_executor_job(
+                        send_tuya_command,
+                        self._hass,
+                        self._device["tuya_device_id"],
+                        self._dp["code"],
+                        restored
+                    )
+
+                    self._state = restored
+                    self._last_sent_value = restored
+                    self._restored_once = True
+                    self.async_write_ha_state()
+
+                except Exception as e:
+                    _LOGGER.warning("[%s] ❌ Failed to restore number '%s': %s",
+                                    DOMAIN, self._attr_unique_id, e)
+
+    async def async_update(self):
+        """No polling — status pushes updates."""
+        pass
 
     async def async_update_from_status(self, val):
         """Update from status manager with type-safe parsing."""
