@@ -54,9 +54,9 @@ Each YAML file defines **one or more entities for a single Tuya device**.
 ✅ **Supported entity types (so far):**
 - **device** (optional metadata)
 - **climate** (thermostats)
-- **switch**
-- **sensor**
-- **number**
+- **switch** (Yep on and off)
+- **sensor** (All types including binary)
+- **number** (When your wanting a slide bar or sorts)
 
 You can mix multiple entities in the same YAML to represent all functions of a physical Tuya device.
 
@@ -95,6 +95,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `step_size`| Number | ✅ | Increment |
 | `on_value` | Binary | ✅ | What value means ON, Ie true, 1, 'motion', ... |
 | `options` | Select | ✅ | Map of key: label pairs. Key = sent to Tuya; label = shown in HA. |
+| `is_passive_entity` | All except sensors | optional | Prevents sending commands to Tuya (HA display only). Default: false. |
 
 
 ## 3️⃣ Climate Block — Flexible & Robust

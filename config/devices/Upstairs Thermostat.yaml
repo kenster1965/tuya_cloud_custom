@@ -9,7 +9,6 @@
 
 - climate:
     unique_id: upstairs_thermostat
-    is_passive_entity: true
     enabled: true
     temp_convert: "c_to_f"
     current_temperature:
@@ -40,7 +39,6 @@
     dp: '40'
     type: boolean
     restore_on_reconnect: false
-    is_passive_entity: false
     entity_category: config
     enabled: true
 
@@ -51,10 +49,8 @@
     min_value: 0
     max_value: 100
     step_size: 1
-    is_passive_entity: true
     unit_of_measurement: '%'
     restore_on_reconnect: false
-    is_passive_entity: false
     entity_category: config
     enabled: true
 
@@ -100,7 +96,6 @@
     code: sound
     dp: '7'
     type: boolean
-    is_passive_entity: true
     entity_category: config
     enabled: true
 
@@ -110,7 +105,6 @@
     dp: '43'
     type: enum
     entity_category: config
-    is_passive_entity: true
     options:
         in: Internal
         out: External
