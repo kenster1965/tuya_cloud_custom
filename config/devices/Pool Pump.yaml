@@ -3,8 +3,6 @@
     tuya_device_id: ebeda6045c6efa0743ckr5
     tuya_product_id: ylymu5v6xscoveek
     tuya_category: cz    
-    local_ip: 192.168.68.178
-    local_key: v0lzvE_/lf0mopNJ
     poll_interval: 300
     version: 1
     enabled: true
