@@ -11,7 +11,7 @@ This document explains **how to write robust, flexible YAML files** to fully con
 ## 🔑 secrets.yaml — Tuya Cloud API Credentials
 Your Tuya Cloud Custom integration requires a secrets.yaml file in your Home Assistant /config directory. This file securely stores your Tuya Cloud API credentials and connection settings.
 
-## ✅ Required Fields
+### ✅ Required Fields
 | Field           | Required | Description                                                                                           |
 | --------------- | -------- | ----------------------------------------------------------------------------------------------------- |
 | `client_id`     | ✅        | Tuya IoT project Client ID.                                                                           |
@@ -19,7 +19,7 @@ Your Tuya Cloud Custom integration requires a secrets.yaml file in your Home Ass
 | `base_url`      | ✅        | Tuya API region URL — e.g. `https://openapi.tuyaus.com` (US), `https://openapi.tuyaeu.com` (EU), etc. |
 | `token_refresh` | ✅        | How often to refresh the access token (in minutes). **Recommended: 110 minutes**.                     |
 
-## 📝 Optional Fields
+### 📝 Optional Fields
 | Field          | Required | Description                                               |
 | -------------- | -------- | --------------------------------------------------------- |
 | `Name`         | optional | Friendly name for your project (for your reference only). |
@@ -28,7 +28,7 @@ Your Tuya Cloud Custom integration requires a secrets.yaml file in your Home Ass
 | `user_id`      | optional | Tuya Cloud user ID (optional).                            |
 | `project_code` | optional | Your project identifier (optional).                       |
 
-## 📂 Example secrets.yaml
+### 📂 Example secrets.yaml
 ```yaml
 Name: "Ken's Custom Cloud Tuya"
 client_id: "YOUR_CLIENT_ID"
@@ -62,7 +62,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 
 ---
 
-## ✅ 1️⃣ Device Block
+## 1️⃣ Device Block
 | Field | Required | Description |
 |-------|----------|-----------------------------|
 | `friendly_name` | ✅ | Human-friendly display name for HA's Device page. |
@@ -79,7 +79,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 
 ---
 
-## ✅ 2️⃣ Entity Blocks (Sensor, Switch, Number, Binary, Select, -adding more soon-)
+## 2️⃣ Entity Blocks (Sensor, Switch, Number, Binary, Select, -adding more soon-)
 | Field | Used in | Required | Description |
 |-------|---------|----------|-----------------------------|
 | `enabled` | All | ✅ | Enable or disable this entity. |
@@ -97,9 +97,9 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `options` | Select | ✅ | Map of key: label pairs. Key = sent to Tuya; label = shown in HA. |
 
 
-## ✅ 3️⃣ Climate Block — Flexible & Robust
-✅ Climate Block
-Defines a thermostat entity.
+## 3️⃣ Climate Block — Flexible & Robust
+A Climate Block Defines a thermostat entity.
+
 | Field                 | Required | Description |
 | --------------------- | -------- | --------------------------------- |
 | `unique_id`           | ✅ | Globally unique ID for the thermostat. This pins both the backend ID and the UI display name. |
@@ -121,14 +121,12 @@ Defines a thermostat entity.
 | `max_temp`  | optional (target only) | Maximum allowed      |
 | `precision` | optional (target only) | Step increment       |
 
-
 🔹 on_off
 | Field  | Required | Description         |
 | ------ | -------- | ------------------- |
 | `code` | ✅ | Tuya switch DP code |
 | `dp`   | optional | DP ID, for reference only |
 | `type` | ✅ | `boolean` |
-
 
 🔹 hvac_mode
 | Field   | Required | Description                                       |
@@ -144,9 +142,11 @@ Defines a thermostat entity.
 | `10` (default) | If your DP reports temperature in tenths of a degree (common for thermostats). Example: raw `820` = `82.0°F`. |
 | `1` | If your DP reports whole degrees directly (common for pool heat pumps or simple thermostats). Example: raw `82` = `82°F`. |
 
+✅ `temp_convert` handles raw C → HA F.
+✅ `on_off` switch overrides mode to `OFF`.
+✅ `modes` maps HA UI modes to Tuya’s values.
 
-Example with temperature conversion, switch, mode mapping:
-
+### Example with temperature conversion, switch, mode mapping:
 ```yaml
 - climate:
     unique_id: upstairs_thermostat
@@ -175,7 +175,9 @@ Example with temperature conversion, switch, mode mapping:
       modes:
         heat: 'manual'
         # heat_cool: 'auto'  # Omiting so HA does not list it as a Mode
-
+```
+### Excample with same scale
+```yaml
 - climate:
     unique_id: pool_thermostat
     enabled: true
@@ -202,10 +204,10 @@ Example with temperature conversion, switch, mode mapping:
       modes:
         heat: '1'
         cool: '0'
-
 ```
 
-Example of `select` block
+## 4️⃣ Select Block
+Examples of `select` block
 ```yaml
 - select:
     code: sensor_mode
@@ -214,7 +216,8 @@ Example of `select` block
       in: Internal
       out: External
     enabled: true
-
+```
+```yaml
 - select:
     code: fan_speed
     type: enum
@@ -229,13 +232,7 @@ Sends raw:  "low", "medium", "high" to Tuya.
 
 ---
 
-✅ `temp_convert` handles raw C → HA F.
-✅ `on_off` switch overrides mode to `OFF`.
-✅ `modes` maps HA UI modes to Tuya’s values.
-
----
-
-## ✅ 4️⃣ Translated Example
+## 5️⃣ Translated Example
 
 Map raw states to friendly labels — works for `enum`, `bitfield`, or `integer` values.
 Note: at times keys like 0, 1, .. are not integers but are treated as strings so the key would then have to be in 'quotes'.
@@ -249,7 +246,8 @@ Note: at times keys like 0, 1, .. are not integers but are treated as strings so
       open: 'Heating'
       close: 'Off'
     enabled: true
-
+```
+```yaml
 - sensor:
     code: fault
     id: '15'
@@ -263,7 +261,7 @@ Note: at times keys like 0, 1, .. are not integers but are treated as strings so
 
 ---
 
-## ✅ 5️⃣ How IDs Work
+## 6️⃣ How IDs Work
 | What                          | How it’s built                                                               |
 | ----------------------------- | ---------------------------------------------------------------------------- |
 | **Device Registry ID**        | always `tuya_device_id`                                                      |
@@ -278,15 +276,15 @@ Duplicate tuya_device_id = setup error → logged clearly.
 
 ---
 
-## ✅ 6️⃣ Best Practices
-✅ One YAML per real Tuya device — do not duplicate tuya_device_id.
+## 7️⃣ Best Practices
+✅ One YAML per real Tuya device — do not duplicate tuya_device_id!
 ✅ Use friendly_name for UI clarity — safe to rename in HA if needed.
 ✅ Keep code unique per entity.
 ✅ Use translated for friendly states.
 
 ---
 
-## ✅ 7️⃣ Full Example YAML
+## 8 Full Example YAML
 ```yaml
 - device:
     friendly_name: Pool Heater
@@ -295,7 +293,6 @@ Duplicate tuya_device_id = setup error → logged clearly.
     poll_interval: 60
     version: 1
     enabled: true
-
 - climate:
     unique_id: pool_heater
     enabled: true
@@ -322,7 +319,6 @@ Duplicate tuya_device_id = setup error → logged clearly.
       modes:
         heat: 'manual'
         heat_cool: 'auto'
-
 - sensor:
     code: valve_state
     id: '36'
@@ -331,7 +327,6 @@ Duplicate tuya_device_id = setup error → logged clearly.
       open: 'Heating'
       close: 'Idle'
     enabled: true
-
 - sensor:
     code: battery_percentage
     id: '35'
@@ -366,23 +361,3 @@ Duplicate tuya_device_id = setup error → logged clearly.
 ## ✅ Everything clear, flexible & future-proof!
 
 Keep YAML clean, reload safely — **and take full control of Tuya Cloud in HA!** 🚀
-
-
-Excample of binary_sensor
-- binary_sensor:
-    code: motion_state      # ✅ The Tuya DP code for this boolean state
-    type: boolean           # ✅ Always "boolean" for binary sensors
-    device_class: motion    # ✅ (optional) HA device_class: motion, moisture, door, window, etc.
-    entity_category: diagnostic  # ✅ (optional) "config" or "diagnostic"
-    translated:
-      0: "Clear"
-      1: "Motion Detected"
-    enabled: true           # ✅ Must be true to include
-    | Field             | Required | What it does                                                                                                          |
-| ----------------- | -------- | ---------- |
-| `code` | ✅ | The Tuya DP key for this binary value (must be boolean or interpreted as boolean). |
-| `type` | ✅ | Always `"boolean"` — used by your helper to parse the DP safely. |
-| `device_class` | optional | Helps HA render icons & behavior correctly: `motion`, `moisture`, `opening`, `door`, `window`, `safety`, `smoke` etc. |
-| `entity_category` | optional | `"config"` or `"diagnostic"` — optional for sorting in HA UI. |
-| `translated` | optional | Map raw DP values (`0` / `1` or `true` / `false`) to friendly text for logs or debugging. |
-| `enabled` | ✅ | Must be `true` to load it! |

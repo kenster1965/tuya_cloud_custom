@@ -44,12 +44,12 @@ class TuyaCloudNumber(NumberEntity):
         self._attr_native_max_value = dp.get("max_value", 100)
         self._attr_native_step = dp.get("step_size", 1)
 
-        # ✅ Explicit DP type (default to float)
         self._dp_type = dp.get("type", "float")
+        self._is_passive = dp.get("is_passive_entity", False)
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
-        _LOGGER.debug("[%s] ✅ Registered number entity: %s", DOMAIN, key)
+        _LOGGER.debug("[%s] ✅ Registered number entity: %s | Passive=%s", DOMAIN, key, self._is_passive)
 
     @property
     def native_value(self):
@@ -61,6 +61,13 @@ class TuyaCloudNumber(NumberEntity):
 
     async def async_set_native_value(self, value: float):
         """Send number value command with explicit DP type."""
+
+        if self._is_passive:
+            _LOGGER.info("[%s] 🚫 Number %s is passive — command not sent", DOMAIN, self._attr_unique_id)
+            self._state = value
+            self.async_write_ha_state()
+            return
+
         # ✅ Cast safely before sending
         if self._dp_type == "integer":
             value_to_send = int(value)
