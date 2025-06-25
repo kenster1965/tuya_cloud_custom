@@ -39,7 +39,6 @@
     dp: '40'
     type: boolean
     restore_on_reconnect: false
-    is_passive_entity: false
     entity_category: config
     enabled: true
 
@@ -52,7 +51,6 @@
     step_size: 1
     unit_of_measurement: '%'
     restore_on_reconnect: false
-    is_passive_entity: false
     entity_category: config
     enabled: true
 
@@ -63,7 +61,7 @@
     type: enum
     on_value: 'open'
     enabled: true
-    
+
 - sensor:
     code: battery_percentage
     dp: '35'
@@ -100,7 +98,7 @@
     type: boolean
     entity_category: config
     enabled: true
-    
+
 - select:
     code: sensor_choose
     name: Sensor Location

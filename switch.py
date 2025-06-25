@@ -40,12 +40,12 @@ class TuyaCloudSwitch(SwitchEntity):
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
 
-        # ✅ Explicit DP type
         self._dp_type = dp.get("type", "boolean")
+        self._is_passive = dp.get("is_passive_entity", False)
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
-        _LOGGER.debug("[%s] ✅ Registered switch entity: %s", DOMAIN, key)
+        _LOGGER.debug("[%s] ✅ Registered switch entity: %s | Passive: %s", DOMAIN, key, self._is_passive)
 
     @property
     def is_on(self):
@@ -63,28 +63,37 @@ class TuyaCloudSwitch(SwitchEntity):
 
     async def _send_tuya_command(self, state):
         """Send switch command with correct DP type."""
-        # Convert True/False to proper type for Tuya
-        if self._dp_type == "boolean":
-            value = bool(state)
-        elif self._dp_type == "integer":
-            value = int(state)
-        elif self._dp_type == "float":
-            value = float(state)
-        elif self._dp_type == "enum":
-            value = str(state).lower()  # e.g. "on"/"off" if your enum expects that
-        else:
-            value = state
+        if self._is_passive:
+            _LOGGER.info("[%s] 🚫 Passive switch '%s' — ignoring command: %s",
+                         DOMAIN, self._attr_unique_id, state)
+            return
 
-        response = await self._hass.async_add_executor_job(
-            send_tuya_command,
-            self._hass,
-            self._device["tuya_device_id"],
-            self._dp["code"],
-            value
-        )
-        if response and response.status_code == 200:
-            self._state = bool(state)
-            self.async_write_ha_state()
+        try:
+            if self._dp_type == "boolean":
+                value = bool(state)
+            elif self._dp_type == "integer":
+                value = int(state)
+            elif self._dp_type == "float":
+                value = float(state)
+            elif self._dp_type == "enum":
+                value = str(state).lower()
+            else:
+                value = state
+
+            response = await self._hass.async_add_executor_job(
+                send_tuya_command,
+                self._hass,
+                self._device["tuya_device_id"],
+                self._dp["code"],
+                value
+            )
+
+            if response and response.status_code == 200:
+                self._state = bool(state)
+                self.async_write_ha_state()
+
+        except Exception as e:
+            _LOGGER.warning("[%s] ❌ Switch command failed for %s: %s", DOMAIN, self._attr_unique_id, e)
 
     async def async_update(self):
         """No polling — status pushes updates."""

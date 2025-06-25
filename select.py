@@ -34,11 +34,10 @@ class TuyaCloudSelect(SelectEntity):
         self._attr_has_entity_name = True
         self._attr_name = attrs["name"]
         self._attr_unique_id = attrs["unique_id"]
-
         self._attr_entity_category = attrs.get("entity_category")
 
-        # ✅ Read options map from YAML
         self._options_map = dp.get("options", {})
+        self._is_passive = dp.get("is_passive_entity", False)
 
         if not self._options_map:
             _LOGGER.warning(
@@ -50,15 +49,14 @@ class TuyaCloudSelect(SelectEntity):
         self._key_to_label = self._options_map
         self._label_to_key = {v: k for k, v in self._options_map.items()}
 
-        # HA shows the labels
         self._attr_options = list(self._options_map.values())
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
 
         _LOGGER.debug(
-            "[%s] ✅ Registered select entity: %s | Options: %s",
-            DOMAIN, key, self._attr_options
+            "[%s] ✅ Registered select entity: %s | Options: %s | Passive=%s",
+            DOMAIN, key, self._attr_options, self._is_passive
         )
 
     @property
@@ -96,6 +94,15 @@ class TuyaCloudSelect(SelectEntity):
 
     async def async_select_option(self, option: str):
         """Handle user selecting a new option in the UI."""
+        if self._is_passive:
+            _LOGGER.info(
+                "[%s] 🚫 Select %s is passive — command not sent (UI-only update)",
+                DOMAIN, self._attr_unique_id
+            )
+            self._state = option
+            self.async_write_ha_state()
+            return
+
         if option not in self._label_to_key:
             _LOGGER.warning(
                 "[%s] ❌ Invalid option selected: %s for %s",
