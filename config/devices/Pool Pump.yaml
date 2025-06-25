@@ -15,9 +15,12 @@
     restore_on_reconnect: true
     enabled: true
 
-- binary_sensor:
+- sensor:
     code: relay_status
     dp: '38'
     type: enum
-    on_value: 'power_on'
+    translated:
+      power_off: 'Off'
+      power_on: 'On'
+      last: 'Last State'
     enabled: true
