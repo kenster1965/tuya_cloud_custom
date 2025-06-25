@@ -33,6 +33,7 @@ class TuyaCloudSwitch(SwitchEntity, RestoreEntity):
 
         self._state = False
         self._last_ha_command = None
+        self._restored_once = False
 
         attrs = build_entity_attrs(device, dp, "switch")
 
@@ -103,14 +104,14 @@ class TuyaCloudSwitch(SwitchEntity, RestoreEntity):
 
     async def async_added_to_hass(self):
         """Handle entity addition and optional state restore."""
-        if self._restore_on_reconnect and not self._is_passive:
+        if self._restore_on_reconnect and not self._is_passive and not self._restored_once:
             last_state = await self.async_get_last_state()
             if last_state and last_state.state in ("on", "off"):
                 restored_state = last_state.state == "on"
-                if self._last_ha_command is None:
-                    _LOGGER.info("[%s] 🔁 Restoring '%s' to %s (restore_on_reconnect)",
-                                 DOMAIN, self._attr_unique_id, restored_state)
-                    await self._send_tuya_command(restored_state)
+                _LOGGER.info("[%s] 🔁 Restoring '%s' to %s (restore_on_reconnect)",
+                             DOMAIN, self._attr_unique_id, restored_state)
+                await self._send_tuya_command(restored_state)
+                self._restored_once = True
 
     async def async_update(self):
         """No polling — status pushes updates."""

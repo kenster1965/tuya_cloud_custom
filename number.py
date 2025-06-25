@@ -47,6 +47,7 @@ class TuyaCloudNumber(NumberEntity):
         self._is_passive = dp.get("is_passive_entity", False)
         self._restore_on_reconnect = dp.get("restore_on_reconnect", False)
         self._last_sent_value = None
+        self._restored_once = False
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
@@ -95,7 +96,13 @@ class TuyaCloudNumber(NumberEntity):
 
     async def async_update(self):
         """Restore last HA-set value if configured to do so."""
-        if self._restore_on_reconnect and not self._is_passive and self._last_sent_value is not None:
+        if (
+            self._restore_on_reconnect
+            and not self._is_passive
+            and self._last_sent_value is not None
+            and not self._restored_once
+        ):
+
             _LOGGER.info("[%s] ♻️ Restoring number '%s' to %s",
                          DOMAIN, self._attr_unique_id, self._last_sent_value)
 
@@ -107,6 +114,7 @@ class TuyaCloudNumber(NumberEntity):
                 self._last_sent_value
             )
             self._state = self._last_sent_value
+            self._restored_once = True
             self.async_write_ha_state()
         else:
             _LOGGER.debug("[%s] 🔄 Skipping restore for '%s' — Passive=%s, Restore=%s, LastSent=%s",
