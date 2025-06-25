@@ -50,6 +50,9 @@ class TuyaCloudClimate(ClimateEntity):
         # ✅ Scale for raw DP: default 10 (tenths), override to 1 for whole degrees
         self._scale = int(dp.get("scale", 10))
 
+        # ✅ Passive flag
+        self._is_passive = dp.get("is_passive_entity", False)
+
         # 🔑 Target temp config
         self._has_target_temperature = "target_temperature" in dp
         if self._has_target_temperature:
@@ -87,8 +90,8 @@ class TuyaCloudClimate(ClimateEntity):
         if self._switch:
             hass.data[DOMAIN]["entities"][(tid, self._switch["code"])] = self
 
-        _LOGGER.debug("[%s] ✅ Registered robust climate: %s | scale=%s | temp_convert=%s",
-                      DOMAIN, self._attr_unique_id, self._scale, self._temp_convert)
+        _LOGGER.debug("[%s] ✅ Registered robust climate: %s | scale=%s | temp_convert=%s | passive=%s",
+                      DOMAIN, self._attr_unique_id, self._scale, self._temp_convert, self._is_passive)
 
     @property
     def device_info(self):
@@ -114,15 +117,18 @@ class TuyaCloudClimate(ClimateEntity):
         if new_temp is None:
             return
 
+        if self._is_passive:
+            _LOGGER.info("[%s] 🚫 Climate %s is passive — target_temperature not sent", DOMAIN, self._attr_unique_id)
+            self._target_temp = new_temp
+            self.async_write_ha_state()
+            return
+
         temp_to_send = float(new_temp)
 
         if self._temp_convert == "c_to_f":
-            # HA is °F, Tuya wants °C
             temp_to_send = (temp_to_send - 32) * 5 / 9
         elif self._temp_convert == "f_to_c":
-            # HA is °C, Tuya wants °F
             temp_to_send = (temp_to_send * 9 / 5) + 32
-        # else: raw
 
         value = int(temp_to_send * self._scale)
 
@@ -138,6 +144,10 @@ class TuyaCloudClimate(ClimateEntity):
         self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
+        if self._is_passive:
+            _LOGGER.info("[%s] 🚫 Climate %s is passive — hvac_mode not sent", DOMAIN, self._attr_unique_id)
+            return
+
         tid = self._device["tuya_device_id"]
 
         if hvac_mode == HVACMode.OFF:
