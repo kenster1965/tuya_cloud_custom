@@ -13,10 +13,9 @@ from datetime import timedelta
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.core import HomeAssistant
 from .climate import TuyaCloudClimate
-
 from .const import DOMAIN
 
-import requests  # Runs in executor only
+import requests
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,7 +35,6 @@ class Status:
 
     async def async_start_polling(self):
         """Start polling each device at its configured interval."""
-
         for device in self.devices:
             if not device.get("enabled", True):
                 _LOGGER.info("[%s] ⏹️ Device %s is disabled; skipping.", DOMAIN, device.get("tuya_device_id"))
@@ -59,13 +57,40 @@ class Status:
 
     async def async_fetch_status(self, device: dict):
         """Fetch status from Tuya API for a single device."""
+        response = await self.hass.async_add_executor_job(self._do_request, device)
 
-        def _do_request():
+        if response and response.status_code == 200 and response.json().get("success"):
+            payload = response.json()["result"]
+            for dp in payload:
+                dp_code = dp["code"]
+                value = dp["value"]
+                key = (device["tuya_device_id"], dp_code)
+                entity = self.hass.data[DOMAIN]["entities"].get(key)
+
+                if entity:
+                    if isinstance(entity, TuyaCloudClimate):
+                        await entity.async_update_from_status({"code": dp_code, "value": value})
+                    else:
+                        await entity.async_update_from_status(value)
+                else:
+                    _LOGGER.debug("[%s] ⚠️ No entity registered for %s (DP: %s)", DOMAIN, key, dp_code)
+        else:
+            _LOGGER.error("[%s] ❌ API error for %s: %s",
+                          DOMAIN,
+                          device["tuya_device_id"],
+                          response.text if response else "No response")
+
+    def _do_request(self, device: dict):
+        """Internal helper to request device status with retries and backoff."""
+        retries = 3
+        backoff = 1  # seconds
+
+        for attempt in range(1, retries + 1):
             try:
                 with open(self.token_file, "r") as f:
                     token_data = json.load(f)
-                access_token = token_data["access_token"]
 
+                access_token = token_data["access_token"]
                 device_id = device["tuya_device_id"]
                 method = "GET"
                 url_path = f"/v1.0/devices/{device_id}/status"
@@ -92,34 +117,20 @@ class Status:
 
                 url = f"{self.base_url}{url_path}"
                 response = requests.get(url, headers=headers, timeout=10)
+                response.raise_for_status()
                 return response
 
-            except Exception as e:
-                _LOGGER.exception("[%s] ❌ Exception in status request: %s", DOMAIN, e)
-                return None
+            except requests.exceptions.RequestException as e:
+                _LOGGER.warning("[%s] ⚠️ Attempt %d/%d failed for %s: %s",
+                                DOMAIN, attempt, retries, device["tuya_device_id"], str(e))
 
-        response = await self.hass.async_add_executor_job(_do_request)
-
-        if response and response.status_code == 200 and response.json().get("success"):
-            payload = response.json()["result"]
-
-            for dp in payload:
-                dp_code = dp["code"]
-                value = dp["value"]
-                key = (device["tuya_device_id"], dp_code)
-                entity = self.hass.data[DOMAIN]["entities"].get(key)
-
-                if entity:
-                    if isinstance(entity, TuyaCloudClimate):  # or check .__class__.__name__
-                        await entity.async_update_from_status({"code": dp_code, "value": value})
-                    else:
-                        await entity.async_update_from_status(value)
+                if attempt < retries:
+                    time.sleep(backoff)
+                    backoff *= 2
                 else:
-                    _LOGGER.debug("[%s] ⚠️ No entity registered for %s (DP: %s)", DOMAIN, key, dp_code)
-
-        else:
-            _LOGGER.error("[%s] ❌ API error for %s: %s",
-                DOMAIN, device["tuya_device_id"], response.text if response else "No response")
+                    _LOGGER.error("[%s] ❌ Final failure for %s after %d attempts",
+                                  DOMAIN, device["tuya_device_id"], retries)
+        return None
 
     async def async_fetch_all_devices(self):
         """Manually force-refresh all devices immediately."""
