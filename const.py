@@ -2,7 +2,7 @@
 
 # Base component constants
 DOMAIN = "tuya_cloud_custom"
-VERSION = "2025.06.24B"
+VERSION = "2025.06.26"
 
 # Valid HA entity categories
 VALID_ENTITY_CATEGORIES = {
