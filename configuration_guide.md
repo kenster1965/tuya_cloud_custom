@@ -90,6 +90,7 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `class` | All | optional | HA `device_class` (e.g. `temperature`, `battery`). |
 | `unit_of_measurement` | Sensor, NNumberu | optional | Example: `%`, `°C`. |
 | `translated` | Sensor | optional | Map raw DP → friendly labels. |
+| `icon` | 	All	| optional	| Override the default UI icon. Use any Material Design Icon (MDI) code — for example, mdi:fan, mdi:thermometer, mdi:volume-high, etc. |
 | `min_value`| Number | ✅ | Minimum value |
 | `max_value`| Number | ✅ | Maximum value |
 | `step_size`| Number | ✅ | Increment |

@@ -1,7 +1,7 @@
 """
 Tuya Cloud Custom - Helper utilities for building entities and devices.
 
-Version: 2025.06.23
+Version: 2025.07.03
 Author: Ken Jensen & Assistant
 Description:
   - Provides safe attribute builders for custom Tuya Cloud Home Assistant integration.
@@ -39,6 +39,7 @@ def build_entity_attrs(device: dict, dp: dict, platform: str) -> dict:
       - Friendly display name: DP code → Title Case
       - Valid device class & unit
       - Valid entity category
+      - Icon support (optional)
     """
     attrs = {}
 
@@ -54,6 +55,11 @@ def build_entity_attrs(device: dict, dp: dict, platform: str) -> dict:
     # ✅ Clean pretty name: snake_case → Title Case
     auto_name = base_id.replace("_", " ").title()
     attrs["name"] = dp.get("name") or auto_name
+
+    # ✅ Icon support
+    if "icon" in dp:
+        attrs["icon"] = dp["icon"]
+        _LOGGER.debug("[%s] 🖼️ Icon for %s: %s", DOMAIN, attrs["unique_id"], dp["icon"])
 
     # ✅ Other attributes (device_class, unit, etc.) only for non-climate
     if platform != "climate":
@@ -102,7 +108,7 @@ def build_device_info(device: dict) -> dict:
 
     return {
         "identifiers": {(DOMAIN, tuya_id)},  # 🗝️ real unique Device ID
-        "name": friendly_name,                      # 🗝️ used for auto entity_id slug
+        "name": friendly_name,               # 🗝️ used for auto entity_id slug
         "manufacturer": "Tuya",
         "model": model
     }

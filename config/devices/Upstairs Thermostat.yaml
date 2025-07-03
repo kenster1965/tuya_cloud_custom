@@ -3,7 +3,7 @@
     tuya_device_id: ebbc33438cf6370a5fw9mg
     tuya_product_id: cktlr24gpl2h2d0b
     tuya_category: wk
-    poll_interval: 60
+    poll_interval: 300
     version: 1
     enabled: true
 
@@ -39,6 +39,7 @@
     dp: '40'
     type: boolean
     entity_category: config
+    icon: mdi:lock-outline
     enabled: true
 
 - number:
@@ -50,6 +51,7 @@
     step_size: 1
     unit_of_measurement: '%'
     entity_category: config
+    icon: mdi:lightbulb-outline
     enabled: true
 
 - binary_sensor:
@@ -58,6 +60,7 @@
     dp: '36'
     type: enum
     on_value: 'open'
+    icon: mdi:radiator-disabled
     enabled: true
 
 - sensor:
@@ -74,6 +77,7 @@
     dp: '4'
     type: boolean
     entity_category: config
+    icon: mdi:leaf
     enabled: true
 
 - switch:
@@ -81,6 +85,7 @@
     dp: '10'
     type: boolean
     entity_category: config
+    icon: mdi:snowflake-thermometer
     enabled: true
 
 - sensor:
@@ -95,6 +100,7 @@
     dp: '7'
     type: boolean
     entity_category: config
+    icon: mdi:volume-medium
     enabled: true
 
 - select:
@@ -106,4 +112,13 @@
     options:
         in: Internal
         out: External
+    icon: mdi:thermostat-cog
+    enabled: true
+
+- number:
+    code: temp_correction
+    dp: '27'
+    type: integer
+    entity_category: config
+    icon: mdi:thermometer-lines
     enabled: true
