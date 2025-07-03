@@ -37,8 +37,7 @@ class TuyaCloudSensor(SensorEntity):
         self._attr_device_class = attrs.get("device_class")
         self._attr_entity_category = attrs.get("entity_category")
         self._attr_native_unit_of_measurement = attrs.get("native_unit_of_measurement")
-        if "icon" in attrs:
-            self._attr_icon = attrs["icon"]
+        self._attr_icon = attrs.get("icon")
 
         # ✅ Type and translate map
         self._dp_type = dp.get("type", "string")

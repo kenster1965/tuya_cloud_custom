@@ -37,8 +37,7 @@ class TuyaCloudBinarySensor(BinarySensorEntity):
 
         self._attr_device_class = attrs.get("device_class")
         self._attr_entity_category = attrs.get("entity_category")
-        if "icon" in attrs:
-            self._attr_icon = attrs["icon"]
+        self._attr_icon = attrs.get("icon")
 
         # ✅ Read on_value; default to True if not specified
         self._on_value = dp.get("on_value", True)

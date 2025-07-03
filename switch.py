@@ -45,10 +45,8 @@ class TuyaCloudSwitch(SwitchEntity, RestoreEntity):
         self._is_passive = dp.get("is_passive_entity", False)
         self._restore_on_reconnect = dp.get("restore_on_reconnect", False)
 
-        if "entity_category" in attrs:
-            self._attr_entity_category = attrs["entity_category"]
-        if "icon" in attrs:
-            self._attr_icon = attrs["icon"]
+        self._attr_entity_category = attrs.get("entity_category")
+        self._attr_icon = attrs.get("icon")
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self

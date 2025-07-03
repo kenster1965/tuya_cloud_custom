@@ -2,8 +2,11 @@
 
 import logging
 from homeassistant.components.select import SelectEntity
+from homeassistant.helpers.restore_state import RestoreEntity
+
 from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
+from .helpers.tuya_command import send_tuya_command
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,7 +23,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("[%s] ✅ Registered %s selects", DOMAIN, len(selects))
 
 
-class TuyaCloudSelect(SelectEntity):
+class TuyaCloudSelect(SelectEntity, RestoreEntity):
     """Tuya Cloud Custom Select with robust options support."""
 
     def __init__(self, hass, device, dp):
@@ -35,11 +38,13 @@ class TuyaCloudSelect(SelectEntity):
         self._attr_name = attrs["name"]
         self._attr_unique_id = attrs["unique_id"]
         self._attr_entity_category = attrs.get("entity_category")
-        if "icon" in attrs:
-            self._attr_icon = attrs["icon"]
+        self._attr_icon = attrs.get("icon")
 
         self._options_map = dp.get("options", {})
         self._is_passive = dp.get("is_passive_entity", False)
+        self._restore_on_reconnect = dp.get("restore_on_reconnect", False)
+        self._last_sent_option = None
+        self._restored_once = False
 
         if not self._options_map:
             _LOGGER.warning(
@@ -57,8 +62,8 @@ class TuyaCloudSelect(SelectEntity):
         self._hass.data[DOMAIN]["entities"][key] = self
 
         _LOGGER.debug(
-            "[%s] ✅ Registered select entity: %s | Options: %s | Passive=%s",
-            DOMAIN, key, self._attr_options, self._is_passive
+            "[%s] ✅ Registered select entity: %s | Options: %s | Passive=%s | Restore=%s",
+            DOMAIN, key, self._attr_options, self._is_passive, self._restore_on_reconnect
         )
 
     @property
@@ -68,6 +73,22 @@ class TuyaCloudSelect(SelectEntity):
     @property
     def device_info(self):
         return build_device_info(self._device)
+
+    async def async_added_to_hass(self):
+        """Restore state if configured to do so."""
+        if self._restore_on_reconnect and not self._is_passive:
+            last_state = await self.async_get_last_state()
+            if (
+                last_state
+                and last_state.state in self._attr_options
+                and not self._restored_once
+            ):
+                restored = last_state.state
+                self._last_sent_option = restored
+                _LOGGER.info("[%s] ♻️ Restoring select '%s' to %s",
+                             DOMAIN, self._attr_unique_id, restored)
+                await self._send_select_command(restored)
+                self._restored_once = True
 
     async def async_update(self):
         """No polling — push only."""
@@ -112,18 +133,29 @@ class TuyaCloudSelect(SelectEntity):
             )
             return
 
+        await self._send_select_command(option)
+
+    async def _send_select_command(self, option: str):
+        """Send the select command using standard helper."""
         key_to_send = self._label_to_key[option]
 
         try:
-            await self._hass.data[DOMAIN]["status"].async_send_command(
+            response = await self._hass.async_add_executor_job(
+                send_tuya_command,
+                self._hass,
                 self._device["tuya_device_id"],
-                {self._dp["code"]: key_to_send}
+                self._dp["code"],
+                key_to_send
             )
 
-            _LOGGER.info(
-                "[%s] ✅ Sent new option %s (key=%s) for %s",
-                DOMAIN, option, key_to_send, self._attr_unique_id
-            )
+            if response and response.status_code == 200:
+                _LOGGER.info(
+                    "[%s] ✅ Sent select option '%s' (key=%s) for %s",
+                    DOMAIN, option, key_to_send, self._attr_unique_id
+                )
+                self._state = option
+                self._last_sent_option = option
+                self.async_write_ha_state()
 
         except Exception as e:
             _LOGGER.exception("[%s] ❌ Failed to send select option: %s", DOMAIN, e)
