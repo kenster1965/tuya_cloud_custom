@@ -42,6 +42,8 @@ class TuyaCloudNumber(NumberEntity, RestoreEntity):
 
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
+        if "icon" in attrs:
+            self._attr_icon = attrs["icon"]
 
         self._attr_native_min_value = dp.get("min_value", 0)
         self._attr_native_max_value = dp.get("max_value", 100)

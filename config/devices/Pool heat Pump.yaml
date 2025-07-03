@@ -3,7 +3,7 @@
     tuya_device_id: eb27838708a77766e8gkx9
     tuya_product_id: edcxde1oraigz7tw
     tuya_category: znrb
-    poll_interval: 60
+    poll_interval: 300
     version: 1
     enabled: true
 

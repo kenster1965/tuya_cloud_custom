@@ -35,6 +35,8 @@ class TuyaCloudSelect(SelectEntity):
         self._attr_name = attrs["name"]
         self._attr_unique_id = attrs["unique_id"]
         self._attr_entity_category = attrs.get("entity_category")
+        if "icon" in attrs:
+            self._attr_icon = attrs["icon"]
 
         self._options_map = dp.get("options", {})
         self._is_passive = dp.get("is_passive_entity", False)

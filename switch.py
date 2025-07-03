@@ -47,6 +47,8 @@ class TuyaCloudSwitch(SwitchEntity, RestoreEntity):
 
         if "entity_category" in attrs:
             self._attr_entity_category = attrs["entity_category"]
+        if "icon" in attrs:
+            self._attr_icon = attrs["icon"]
 
         key = (device["tuya_device_id"], dp["code"])
         self._hass.data[DOMAIN]["entities"][key] = self
