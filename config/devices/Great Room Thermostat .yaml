@@ -15,6 +15,7 @@
       code: temp_current
       dp: '24'
       type: integer
+      add_separate_entity: true
     target_temperature:
       code: temp_set
       dp: '16'
