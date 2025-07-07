@@ -15,7 +15,7 @@
       code: temp_current_f
       dp: '35'
       type: integer
-      add_separate_entity: true
+      #add_separate_entity: true
     target_temperature:
       code: set_temp59_104
       dp: '196'

@@ -2,12 +2,10 @@
 
 import logging
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
 
 _LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Tuya Cloud Custom sensors."""
@@ -19,15 +17,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                 sensors.append(TuyaCloudSensor(hass, device, dp))
     async_add_entities(sensors)
     _LOGGER.info("[%s] ✅ Registered %s sensors", DOMAIN, len(sensors))
-
-    # ➕ Support dynamic sensors (e.g. from climate)
-    async def add_dynamic_sensor(sensor_entity):
-        async_add_entities([sensor_entity])
-        _LOGGER.info("[%s] ➕ Dynamically registered sensor: %s", DOMAIN, sensor_entity.name)
-
-    hass.bus.async_listen_once("homeassistant_started", lambda _: async_dispatcher_connect(
-        hass, f"{DOMAIN}_add_sensor", add_dynamic_sensor
-    ))
 
 
 class TuyaCloudSensor(SensorEntity):
@@ -86,9 +75,10 @@ class TuyaCloudSensor(SensorEntity):
             else:
                 parsed = str(value)
 
-            # ✅ Normalize to string for translation lookup
+            # ✅ Normalize to string for translation lookup for consistent matching
             parsed_str = str(parsed)
             if self._translated:
+                # Try exact match int first, then string fallback from yaml
                 translated = (
                     self._translated.get(parsed)
                     or self._translated.get(parsed_str)
