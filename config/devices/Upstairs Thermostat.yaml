@@ -3,7 +3,7 @@
     tuya_device_id: ebbc33438cf6370a5fw9mg
     tuya_product_id: cktlr24gpl2h2d0b
     tuya_category: wk
-    poll_interval: 60
+    poll_interval: 300
     version: 1
     enabled: true
 
@@ -15,7 +15,6 @@
       code: temp_current
       dp: '24'
       type: integer
-      #add_separate_entity: true
     target_temperature:
       code: temp_set
       dp: '16'
