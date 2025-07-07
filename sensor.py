@@ -4,12 +4,15 @@ import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.const import STATE_UNKNOWN
+
 from .const import DOMAIN
 from .helpers.helper import build_entity_attrs, build_device_info
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Initialize Tuya Cloud Custom sensors."""
     devices = hass.data[DOMAIN]["devices"]
     sensors = []
 
@@ -18,6 +21,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             if not dp.get("enabled", True):
                 continue
 
+            # Handle mirrored climate sensor
             if dp.get("mirrored", False):
                 if "from_climate" in dp and "from_entity" in dp:
                     try:
@@ -28,6 +32,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                 else:
                     _LOGGER.warning("[%s] ❌ Skipped mirrored sensor due to missing config: %s", DOMAIN, dp)
 
+            # Handle regular Tuya sensor
             elif dp.get("platform") == "sensor":
                 try:
                     sensors.append(TuyaCloudSensor(hass, device, dp))
@@ -39,6 +44,8 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class TuyaCloudSensor(SensorEntity):
+    """Tuya Cloud sensor with optional value translation."""
+
     def __init__(self, hass, device, dp):
         self._hass = hass
         self._device = device
@@ -72,9 +79,11 @@ class TuyaCloudSensor(SensorEntity):
         return build_device_info(self._device)
 
     async def async_update(self):
+        """Polling not used; Tuya uses push updates."""
         pass
 
     async def async_update_from_status(self, value):
+        """Update state from Tuya push status."""
         try:
             parsed = self._parse_value(value)
             translated = self._translate(parsed)
@@ -106,17 +115,17 @@ class TuyaCloudSensor(SensorEntity):
 
 
 class MirroredClimateSensor(SensorEntity):
+    """A read-only sensor that mirrors a climate attribute like current_temperature."""
+
     def __init__(self, hass, device, dp):
         self._hass = hass
         self._device = device
         self._dp = dp
         self._state = None
 
-        #self._source_entity_id = f"climate.{dp['from_climate']}"
         device_slug = device["friendly_name"].lower().replace(" ", "_")
         climate_slug = dp["from_climate"]
         self._source_entity_id = f"climate.{device_slug}_{climate_slug}"
-
         self._from_attr = dp["from_entity"]
 
         self._attr_name = f"{dp['from_climate'].replace('_', ' ').title()} {dp['from_entity'].replace('_', ' ').title()}"
@@ -135,6 +144,7 @@ class MirroredClimateSensor(SensorEntity):
         return build_device_info(self._device)
 
     async def async_added_to_hass(self):
+        """Attach state tracking from the source climate entity."""
         async def _update(entity_id, old_state, new_state):
             if not new_state or new_state.state in (None, STATE_UNKNOWN):
                 return
@@ -152,4 +162,5 @@ class MirroredClimateSensor(SensorEntity):
         async_track_state_change(self._hass, self._source_entity_id, _update)
 
     async def async_update(self):
+        """Polling not used for mirrored sensor."""
         pass
