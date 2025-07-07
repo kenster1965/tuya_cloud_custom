@@ -97,8 +97,12 @@ class TuyaCloudClimate(ClimateEntity):
     def device_info(self):
         return build_device_info(self._device)
 
+    #@property
+    #def current_temperature(self):
+    #    return self._current_temp
     @property
     def current_temperature(self):
+        _LOGGER.debug("[%s] 🔁 climate.current_temperature read: %s", DOMAIN, self._current_temp)
         return self._current_temp
 
     @property
@@ -195,6 +199,7 @@ class TuyaCloudClimate(ClimateEntity):
                 self._current_temp = round((raw - 32) * 5 / 9, 1)
             else:
                 self._current_temp = raw
+            _LOGGER.debug("[%s] 🌡️ Climate %s: Updated current_temp = %s", DOMAIN, self._attr_unique_id, self._current_temp)
 
         elif self._has_target_temperature and dp_code == self._dp["target_temperature"]["code"]:
             raw = float(val) / self._scale

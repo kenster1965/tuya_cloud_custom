@@ -99,6 +99,47 @@ You can mix multiple entities in the same YAML to represent all functions of a p
 | `is_passive_entity` | All except sensors | optional | Prevents sending commands to Tuya (HA display only). Default: false. |
 | `restore_on_reconnect` | Switch, Number	| optional |	When true, Home Assistant will re-send the last known state (if HA previously set it) after a reconnect or restart. Skipped for passive entities. Defaults to false. |
 
+### ➕ Mirrored Sensor from Climate
+You can define a `- sensor:` that mirrors a value (such as `current_temperature`) from a previously defined `- climate:` entity. This sensor does not use a Tuya DP code — it simply reflects the value from the climate entity so it can be shown and graphed as a true `sensor`, How cool is that!!
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `mirrored` | ✅ | Must be `true` to activate this feature. |
+| `from_climate` | ✅ | The `unique_id` of the climate entity you want to mirror from. |
+| `from_entity` | ✅ | The attribute to mirror — e.g., `current_temperature`. |
+| `unit_of_measurement` | optional | Example: `°F`, `°C`. |
+| `device_class` | optional | Example: `temperature`. |
+
+🔹 This sensor will automatically use the `friendly_name` of the device + the `from_climate` ID to create a proper `sensor.<slug>` entity.
+🔹 The mirrored value will be updated whenever the target climate attribute changes.
+🔹 This sensor is **not tied to a Tuya DP code** — it's internal only.
+
+### Example:
+```yaml
+- climate:
+    unique_id: upstairs_thermostat
+    enabled: true
+    temp_convert: "c_to_f"
+    current_temperature:
+      code: temp_current
+      type: integer
+    target_temperature:
+      code: temp_set
+      type: integer
+      min_temp: 40
+      max_temp: 90
+
+- sensor:
+    mirrored: true
+    from_climate: upstairs_thermostat
+    from_entity: current_temperature
+    unit_of_measurement: '°F'
+    device_class: temperature
+    enabled: true
+```
+
+---
+
 ### Note for restore_on_reconnect
 - Does not restore state if is_passive_entity: true.
 - Only restores values that HA explicitly sent before (not values received from Tuya or defaults).
