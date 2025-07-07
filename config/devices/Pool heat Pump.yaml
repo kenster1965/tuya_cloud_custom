@@ -35,6 +35,14 @@
         cool: '0'
 
 - sensor:
+    mirrored: true
+    from_climate: pool_thermostat
+    from_entity: current_temperature
+    unit_of_measurement: '°F'
+    device_class: temperature
+    enabled: true
+
+- sensor:
     code: work_state
     dp: '17'
     enabled: true
@@ -109,4 +117,3 @@
       1: 'Water Flow!'
     entity_category: diagnostic
     enabled: true
-    

@@ -13,6 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Initialize the Climate platform."""
     devices = hass.data[DOMAIN]["devices"]
     climates = []
     for device in devices:
@@ -39,13 +40,12 @@ class TuyaCloudClimate(ClimateEntity):
 
         # 🌡️ Temperature unit & conversion
         self._temp_convert = dp.get("temp_convert", "").strip() or None
-
         if self._temp_convert == "c_to_f":
             self._attr_temperature_unit = UnitOfTemperature.FAHRENHEIT
         elif self._temp_convert == "f_to_c":
             self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         else:
-            self._attr_temperature_unit = UnitOfTemperature.FAHRENHEIT  # Default for most pools
+            self._attr_temperature_unit = UnitOfTemperature.FAHRENHEIT
 
         # ✅ Scale for raw DP: default 10 (tenths), override to 1 for whole degrees
         self._scale = int(dp.get("scale", 10))
@@ -53,7 +53,7 @@ class TuyaCloudClimate(ClimateEntity):
         # ✅ Passive flag
         self._is_passive = dp.get("is_passive_entity", False)
 
-        # 🔑 Target temp config
+        # 🔑 Target temperature config
         self._has_target_temperature = "target_temperature" in dp
         if self._has_target_temperature:
             tt = dp["target_temperature"]
@@ -75,7 +75,6 @@ class TuyaCloudClimate(ClimateEntity):
         self._hvac_code = hvac_mode_def["code"]
         self._ha_to_tuya = hvac_mode_def["modes"]
         self._tuya_to_ha = {v: k for k, v in self._ha_to_tuya.items()}
-
         self._attr_hvac_modes = ["off"] + list(self._ha_to_tuya.keys())
 
         self._mode_value = None
@@ -99,6 +98,7 @@ class TuyaCloudClimate(ClimateEntity):
 
     @property
     def current_temperature(self):
+        _LOGGER.debug("[%s] 🔁 climate.current_temperature read: %s", DOMAIN, self._current_temp)
         return self._current_temp
 
     @property
@@ -124,7 +124,6 @@ class TuyaCloudClimate(ClimateEntity):
             return
 
         temp_to_send = float(new_temp)
-
         if self._temp_convert == "c_to_f":
             temp_to_send = (temp_to_send - 32) * 5 / 9
         elif self._temp_convert == "f_to_c":
@@ -144,6 +143,7 @@ class TuyaCloudClimate(ClimateEntity):
         self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
+        """Set the HVAC mode, handling passive and switch overrides."""
         if self._is_passive:
             _LOGGER.info("[%s] 🚫 Climate %s is passive — hvac_mode not sent", DOMAIN, self._attr_unique_id)
             return
@@ -181,9 +181,11 @@ class TuyaCloudClimate(ClimateEntity):
         self.async_write_ha_state()
 
     async def async_update(self):
+        """Polling not used — Tuya cloud sends updates via websocket."""
         pass
 
     async def async_update_from_status(self, payload):
+        """Handle incoming updates from Tuya Cloud for registered DPs."""
         dp_code = payload["code"]
         val = payload["value"]
 
@@ -195,6 +197,7 @@ class TuyaCloudClimate(ClimateEntity):
                 self._current_temp = round((raw - 32) * 5 / 9, 1)
             else:
                 self._current_temp = raw
+            _LOGGER.debug("[%s] 🌡️ Climate %s: Updated current_temp = %s", DOMAIN, self._attr_unique_id, self._current_temp)
 
         elif self._has_target_temperature and dp_code == self._dp["target_temperature"]["code"]:
             raw = float(val) / self._scale

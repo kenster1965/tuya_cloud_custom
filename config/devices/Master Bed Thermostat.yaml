@@ -34,12 +34,20 @@
         heat: 'manual'
         # heat_cool: 'auto'
 
+- sensor:
+    mirrored: true
+    from_climate: master_bed_thermostat
+    from_entity: current_temperature
+    unit_of_measurement: '°F'
+    device_class: temperature
+    enabled: true
+    
 - switch:
     code: child_lock
     dp: '40'
     type: boolean
-    is_passive_entity: false
     entity_category: config
+    icon: mdi:lock-outline
     enabled: true
 
 - number:
@@ -50,8 +58,8 @@
     max_value: 100
     step_size: 1
     unit_of_measurement: '%'
-    is_passive_entity: false
     entity_category: config
+    icon: mdi:lightbulb-outline
     enabled: true
 
 - binary_sensor:
@@ -60,6 +68,7 @@
     dp: '36'
     type: enum
     on_value: 'open'
+    icon: mdi:radiator-disabled
     enabled: true
 
 - sensor:
@@ -76,6 +85,7 @@
     dp: '4'
     type: boolean
     entity_category: config
+    icon: mdi:leaf
     enabled: true
 
 - switch:
@@ -83,6 +93,7 @@
     dp: '10'
     type: boolean
     entity_category: config
+    icon: mdi:snowflake-thermometer
     enabled: true
 
 - sensor:
@@ -97,6 +108,7 @@
     dp: '7'
     type: boolean
     entity_category: config
+    icon: mdi:volume-medium
     enabled: true
 
 - select:
@@ -108,4 +120,13 @@
     options:
         in: Internal
         out: External
+    icon: mdi:thermostat-cog
+    enabled: true
+
+- number:
+    code: temp_correction
+    dp: '27'
+    type: integer
+    entity_category: config
+    icon: mdi:thermometer-lines
     enabled: true
