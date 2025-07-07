@@ -15,7 +15,6 @@
       code: temp_current
       dp: '24'
       type: integer
-      #add_separate_entity: true
     target_temperature:
       code: temp_set
       dp: '16'
@@ -35,6 +34,14 @@
         heat: 'manual'
         # heat_cool: 'auto'
 
+- sensor:
+    mirrored: true
+    from_climate: front_room_thermostat
+    from_entity: current_temperature
+    unit_of_measurement: '°F'
+    device_class: temperature
+    enabled: true
+    
 - switch:
     code: child_lock
     dp: '40'

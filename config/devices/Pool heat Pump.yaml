@@ -15,7 +15,6 @@
       code: temp_current_f
       dp: '35'
       type: integer
-      #add_separate_entity: true
     target_temperature:
       code: set_temp59_104
       dp: '196'
@@ -34,6 +33,14 @@
       modes:
         heat: '1'
         cool: '0'
+
+- sensor:
+    mirrored: true
+    from_climate: pool_thermostat
+    from_entity: current_temperature
+    unit_of_measurement: '°F'
+    device_class: temperature
+    enabled: true
 
 - sensor:
     code: work_state
