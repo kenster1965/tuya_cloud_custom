@@ -34,6 +34,14 @@
         heat: 'manual'
         # heat_cool: 'auto'
 
+- sensor:
+    mirrored: true
+    from_climate: upstairs_thermostat
+    from_entity: current_temperature
+    unit_of_measurement: '°F'
+    device_class: temperature
+    enabled: true
+
 - switch:
     code: child_lock
     dp: '40'

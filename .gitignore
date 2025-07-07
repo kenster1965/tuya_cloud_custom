@@ -10,6 +10,8 @@
 
 # Ignored folders!!
 #config/devices
+#__pycache__
+#helpers/__pycache__
 
 # I want these files ignored!!
 secrets.yaml
