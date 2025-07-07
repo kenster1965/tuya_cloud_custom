@@ -8,6 +8,7 @@ Unlike the built-in integration, **Tuya Cloud Custom** allows you to:
 - Control naming, device classes, platforms, and more
 - Use partial control (e.g., diagnostic-only mode)
 - Bypass limitations of the official Tuya integration
+- Build 'Mirrored' sensors from the climate/thermastate, so you can have a sensor not tied to climate
 
 ---
 
