@@ -2,7 +2,7 @@
 
 import logging
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.event import async_track_state_change
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.const import STATE_UNKNOWN
 
 from .const import DOMAIN
@@ -145,12 +145,16 @@ class MirroredClimateSensor(SensorEntity):
 
     async def async_added_to_hass(self):
         """Attach state tracking from the source climate entity."""
-        async def _update(entity_id, old_state, new_state):
+        async def _update(event):
+            new_state = event.data.get("new_state")
             if not new_state or new_state.state in (None, STATE_UNKNOWN):
                 return
             try:
                 new_val = new_state.attributes.get(self._from_attr)
-                _LOGGER.debug("[%s] 🔁 Mirrored sensor update from %s.%s: %s", DOMAIN, entity_id, self._from_attr, new_val)
+                _LOGGER.debug(
+                    "[%s] 🔁 Mirrored sensor update from %s.%s: %s",
+                    DOMAIN, self._source_entity_id, self._from_attr, new_val
+                )
                 if isinstance(new_val, (int, float)):
                     self._state = new_val
                     self.async_write_ha_state()
@@ -159,7 +163,8 @@ class MirroredClimateSensor(SensorEntity):
             except Exception as e:
                 _LOGGER.warning("[%s] ⚠️ Failed to update mirrored sensor: %s", DOMAIN, e)
 
-        async_track_state_change(self._hass, self._source_entity_id, _update)
+        async_track_state_change_event(self._hass, [self._source_entity_id], _update)
+
 
     async def async_update(self):
         """Polling not used for mirrored sensor."""
