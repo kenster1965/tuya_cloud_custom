@@ -1,6 +1,6 @@
 - device:
     friendly_name: Pool Heatpump
-    tuya_device_id: eb27838708a77766e8gkx9
+    tuya_device_id: ebfa9cd7334484faf7mmrz
     tuya_product_id: edcxde1oraigz7tw
     tuya_category: znrb
     poll_interval: 300
