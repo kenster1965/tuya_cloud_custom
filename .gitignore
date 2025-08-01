@@ -9,10 +9,35 @@
 !*.js*
 
 # Ignored folders!!
+# Ignore Python bytecode and cache
+
 #config/devices
 #__pycache__
 #helpers/__pycache__
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 
 # I want these files ignored!!
 secrets.yaml
-tuya_token.json
+custom_components/tuya_cloud_custom/secrets.yaml
+custom_components/tuya_cloud_custom/tuya_token.json
+todo
+
+# Ignore virtual environments (common names)
+env/
+venv/
+.venv/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore backups or temp files
+*.bak
+*.swp
+*.tmp
