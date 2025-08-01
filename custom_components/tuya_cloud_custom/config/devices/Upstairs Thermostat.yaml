@@ -1,6 +1,6 @@
 - device:
     friendly_name: Thermostat Upstairs
-    tuya_device_id: ebbc33438cf6370a5fw9mg
+    tuya_device_id: something
     tuya_product_id: cktlr24gpl2h2d0b
     tuya_category: wk
     poll_interval: 300
