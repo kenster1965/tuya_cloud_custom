@@ -23,6 +23,7 @@ __pycache__/
 secrets.yaml
 custom_components/tuya_cloud_custom/secrets.yaml
 custom_components/tuya_cloud_custom/tuya_token.json
+custom_components/tuya_cloud_custom/config/devices/*.*
 todo
 
 # Ignore virtual environments (common names)
