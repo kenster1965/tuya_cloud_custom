@@ -22,6 +22,8 @@ Unlike the built-in integration, **Tuya Cloud Custom** allows you to:
 - [Configure Your Devices](#-ready-to-configure-your-devices)
 - [Features](#-features)
 - [Folder Structure](#-folder-structure)
+- [Disclaimer](#-disclaimer)
+- [License](#-license)
 
 ---
 
@@ -129,3 +131,14 @@ Once you have your Tuya credentials and device information, you’re ready to se
 ├── status.py
 └── switch.py
 ```
+
+## 📜 Disclaimer
+- This is an independent project and is **not affiliated with Tuya**.  
+- Use at your own risk. API behavior may change without notice.  
+
+---
+
+## 📄 License
+[MIT License](LICENSE)
+
+---
