@@ -22,6 +22,7 @@ Unlike the built-in integration, **Tuya Cloud Custom** allows you to:
 - [Configure Your Devices](#-ready-to-configure-your-devices)
 - [Features](#-features)
 - [Folder Structure](#-folder-structure)
+- [Contributing / Issues](#-contributing--issues)
 - [Disclaimer](#-disclaimer)
 - [License](#-license)
 
@@ -131,6 +132,16 @@ Once you have your Tuya credentials and device information, you’re ready to se
 ├── status.py
 └── switch.py
 ```
+
+--- 
+
+## 🧑‍💻 Contributing / Issues
+Got a feature request, bug report, or enhancement idea?  
+- 🐞 [Open an issue](https://github.com/kenster1965/tuya_cloud_custom/issues)
+- Pull requests are welcome and encouraged!
+- Follow Home Assistant [developer documentation](https://developers.home-assistant.io/) when contributing code
+
+---
 
 ## 📜 Disclaimer
 - This is an independent project and is **not affiliated with Tuya**.  
