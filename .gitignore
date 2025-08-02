@@ -25,6 +25,7 @@ custom_components/tuya_cloud_custom/secrets.yaml
 custom_components/tuya_cloud_custom/tuya_token.json
 custom_components/tuya_cloud_custom/config/devices/*.*
 todo
+notes
 
 # Ignore virtual environments (common names)
 env/

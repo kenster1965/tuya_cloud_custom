@@ -1,10 +1,13 @@
 {
     "domain": "tuya_cloud_custom",
     "name": "Tuya Cloud Custom",
-    "version": "2025.07.07",
+    "version": "2.0.1",
     "documentation": "https://github.com/kenster1965/tuya_cloud_custom",
+    "issue_tracker": "https://github.com/Kenster1965/tuya_cloud_custom/issues/new/choose",
     "dependencies": [],
     "codeowners": ["@kenster1965"],
     "config_flow": true,
+    "iot_class": "cloud_polling",
+    "integration_type": "hub",
     "requirements": []
   }

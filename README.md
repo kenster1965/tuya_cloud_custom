@@ -1,14 +1,26 @@
 # Tuya Cloud Custom for Home Assistant
 
-**Tuya Cloud Custom** is a Home Assistant custom integration designed to work similarly to the built-in Tuya integration — but with more control and flexibility. This project gives you the power to define and customize how your Tuya devices are represented in Home Assistant using simple YAML configuration files.
-
+**Tuya Cloud Custom** is a Home Assistant custom integration designed to work similarly to the built-in Tuya integration — but with more control and flexibility. This project gives you the power to define and customize how your Tuya devices are represented in Home Assistant using simple YAML configuration files.  
 Unlike the built-in integration, **Tuya Cloud Custom** allows you to:
 - Customize each device’s entity configuration
 - Add or exclude specific entities
 - Control naming, device classes, platforms, and more
 - Use partial control (e.g., diagnostic-only mode)
 - Bypass limitations of the official Tuya integration
-- Build 'Mirrored' sensors from the climate/thermastate, so you can have a sensor not tied to climate
+- Build 'Mirrored' sensors from the climate/thermostat, so you can have a sensor not tied to climate
+
+![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg) 
+[![GitHub release](https://img.shields.io/github/v/tag/Kenster1965/tuya_cloud_custom?label=version)](https://github.com/Kenster1965/tuya_cloud_custom/tags)
+[![License](https://img.shields.io/github/license/Kenster1965/v)](https://github.com/Kenster1965/tuya_cloud_custom/blob/main/LICENSE)
+[![Report Issue](https://img.shields.io/badge/Report-Issue-blue)](https://github.com/Kenster1965/tuya_cloud_custom/issues/new/choose)
+[![Community Forum](https://img.shields.io/badge/Community-Forum-blue.svg?style=flat&logo=home-assistant)](https://community.home-assistant.io/)
+
+- [Requirements](#-requirements)
+- [Get Your Tuya Credentials](#-how-to-get-your-tuya-credentials)
+- [Finding Tuya Device IDs and Data Points](#-finding-tuya-device-ids-and-data-points)
+- [Configure Your Devices](#-ready-to-configure-your-devices)
+- [Features](#-features)
+- [Folder Structure](#-folder-structure)
 
 ---
 
@@ -39,7 +51,7 @@ To use this integration, you must:
 
 ---
 
-## 📦 Finding Tuya Device IDs and DP (Data Points)
+## 📦 Finding Tuya Device IDs and Data Points
 
 Once your app is linked to the Tuya Cloud Project:
 
@@ -53,7 +65,7 @@ Once your app is linked to the Tuya Cloud Project:
 
 ---
 
-## 🧩 Ready to Configure Your Devices?
+## 🧩 Ready to Configure Your Devices
 
 Once you have your Tuya credentials and device information, you’re ready to set up your custom devices in Home Assistant.
 
@@ -99,4 +111,3 @@ Once you have your Tuya credentials and device information, you’re ready to se
 ├── status.py
 └── switch.py
 ```
-

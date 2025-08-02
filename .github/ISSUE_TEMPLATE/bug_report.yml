@@ -1,0 +1,38 @@
+name: 🐞 Bug Report
+description: File a bug report to help improve the integration
+title: "[Bug] <Describe your issue here>"
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide a clear and concise description of the issue.
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Version
+      placeholder: e.g., 2025.7.2
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration Version (from manifest or HACS)
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description
+      description: What did you expect to happen? What actually happened?
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Paste any relevant logs here
+      render: shell
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+  - type: markdown
+    attributes:
+      value: |
+        ### 📎 Attach Diagnostics File
+        If possible, please include a diagnostics file for this integration.
