@@ -16,6 +16,7 @@ Unlike the built-in integration, **Tuya Cloud Custom** allows you to:
 [![Community Forum](https://img.shields.io/badge/Community-Forum-blue.svg?style=flat&logo=home-assistant)](https://community.home-assistant.io/)
 
 - [Requirements](#-requirements)
+- [Installation](#-installation)
 - [Get Your Tuya Credentials](#-how-to-get-your-tuya-credentials)
 - [Finding Tuya Device IDs and Data Points](#-finding-tuya-device-ids-and-data-points)
 - [Configure Your Devices](#-ready-to-configure-your-devices)
@@ -30,6 +31,23 @@ To use this integration, you must:
 - Have a Tuya Developer Account
 - Know your **Tuya API credentials** (`client_id`, `client_secret`, and `base_url`)
 - Know your **device IDs** and **data point (DP) codes/IDs**
+
+---
+
+## 🔧 Installation
+### Via HACS
+[![hacs_badge](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kenster1965&repository=tuya_cloud_custom&category=integration)
+
+### Manual Installation
+1. Using the tool of choice open the directory (folder) for your HA configuration (where you find configuration.yaml).
+2. If you do not have a custom_components directory (folder) there, you need to create it.
+3. In the custom_components directory (folder) create a new folder called `tuya_cloud_custom`.
+4. Download all the files from the `custom_components/tuya_cloud_custom/` directory (folder) in this repository.
+5. Place the files you downloaded in the new directory (`tuya_cloud_custom`) you created.
+6. Restart Home Assistant.
+7. Navigate to **Settings > Devices & Services > Integrations**.
+   Click ➕ Add Integration → Search for **Tuya Cloud Custom**.
+8. Enter your credentials per Configuration Options below.
 
 ---
 
